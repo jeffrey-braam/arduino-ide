@@ -6,6 +6,7 @@ import { indentUnit } from "@codemirror/language";
 import { completeFromList, completeAnyWord } from "@codemirror/autocomplete";
 import { cpp, cppLanguage } from "@codemirror/lang-cpp";
 import { oneDark } from "@codemirror/theme-one-dark";
+import { setDiagnostics, lintGutter } from "@codemirror/lint";
 
 // Arduino API names, highlighted and offered as completions.
 const FUNCTIONS = [
@@ -63,6 +64,7 @@ export function createEditor(parent, { doc, onChange, keys = [] }) {
     cppLanguage.data.of({ autocomplete: arduinoCompletions }),
     cppLanguage.data.of({ autocomplete: completeAnyWord }),
     arduinoHighlight,
+    lintGutter(),
     indentUnit.of("  "),
     EditorState.tabSize.of(2),
     theme.of(darkQuery.matches ? oneDark : []),
@@ -85,5 +87,30 @@ export function createEditor(parent, { doc, onChange, keys = [] }) {
       view.setState(EditorState.create({ doc: text, extensions: extensions() }));
     },
     focus: () => view.focus(),
+
+    // Compiler messages as underlines + gutter markers. items: { line, column, severity, message }
+    showDiagnostics(items) {
+      const doc = view.state.doc;
+      const diagnostics = items
+        .filter((d) => d.line >= 1 && d.line <= doc.lines)
+        .map((d) => {
+          const line = doc.line(d.line);
+          const from = Math.min(line.to, line.from + Math.max(0, d.column - 1));
+          // Underline the word at the column, or the whole line if there isn't one.
+          const word = view.state.wordAt(from);
+          const [start, end] = word && word.from >= line.from ? [word.from, word.to] : [line.from, line.to];
+          const to = end > start ? end : Math.min(line.to, start + 1);
+          return { from: start, to, severity: d.severity === "note" ? "info" : d.severity, message: d.message };
+        });
+      view.dispatch(setDiagnostics(view.state, diagnostics));
+    },
+
+    goTo(lineNumber, column = 1) {
+      const doc = view.state.doc;
+      const line = doc.line(Math.min(Math.max(1, lineNumber), doc.lines));
+      const pos = Math.min(line.to, line.from + Math.max(0, column - 1));
+      view.dispatch({ selection: { anchor: pos }, effects: EditorView.scrollIntoView(pos, { y: "center" }) });
+      view.focus();
+    },
   };
 }

@@ -7,7 +7,7 @@ import { BOARDS, DEFAULT_BOARD } from "./boards.js";
 import { OutputLog } from "./log.js";
 import * as storage from "./storage.js";
 import * as files from "./files.js";
-import { compilerAvailable, compile } from "./compiler.js";
+import { compilerAvailable, compile, startCompiler } from "./compiler.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -192,13 +192,9 @@ const actions = {
 
   async verify() {
     if (busy) return;
-    showTab("output");
-    if (!compilerAvailable) return log.warn("Compiling isn't included in this version yet. Use “Upload .hex” to upload an already-compiled sketch.");
     setBusy(true);
     try {
-      await compile(sketch.code, BOARDS[settings.board]);
-    } catch (e) {
-      log.error(e.message);
+      await compileSketch();
     } finally {
       setBusy(false);
     }
@@ -206,19 +202,14 @@ const actions = {
 
   async upload() {
     if (busy) return;
-    showTab("output");
-    if (!compilerAvailable) return log.warn("Compiling isn't included in this version yet. Use “Upload .hex” to upload an already-compiled sketch.");
-    let image;
     setBusy(true);
+    let result;
     try {
-      image = (await compile(sketch.code, BOARDS[settings.board])).image;
-    } catch (e) {
-      log.error(e.message);
-      return;
+      result = await compileSketch();
     } finally {
       setBusy(false);
     }
-    await uploadImage(image, sketch.name);
+    if (result) await uploadImage(result.image, sketch.name);
   },
 
   async uploadHex() {
@@ -243,6 +234,54 @@ const actions = {
     await uploadImage(image, f.name);
   },
 };
+
+// The compiler needs a .ino name for the main file; a sketch opened as .txt or .cpp still compiles.
+const mainFileName = () => (/\.ino$/i.test(sketch.name) ? sketch.name : sketch.name.replace(/\.[^.]*$/, "") + ".ino");
+
+// Compiles the sketch, reporting to the Output panel and editor. Resolves with the result or null.
+async function compileSketch() {
+  showTab("output");
+  if (!compilerAvailable) {
+    log.warn("This copy of the IDE was built without the compiler. Use “Upload .hex” to upload an already-compiled sketch.");
+    return null;
+  }
+  const board = BOARDS[settings.board];
+  const fileName = mainFileName();
+  editor.showDiagnostics([]);
+  log.info(`Compiling ${fileName} for ${board.name}…`);
+  setStatus("Compiling…");
+  const onLocation = (file, line, column) => file === fileName && editor.goTo(line, column);
+  const t0 = performance.now();
+  try {
+    const r = await compile([{ name: fileName, code: sketch.code }], { log: (m) => log.muted(m) });
+    if (r.output.trim()) log.compilerOutput(r.output, { onLocation });
+    editor.showDiagnostics(r.warnings.filter((d) => d.file === fileName));
+
+    const flashMax = board.upload.maxSize;
+    const ramMax = board.ramSize;
+    const pct = (n, max) => Math.round((n / max) * 100);
+    log.info(`Sketch uses ${r.flash} bytes (${pct(r.flash, flashMax)}%) of program storage space. Maximum is ${flashMax} bytes.`);
+    log.info(`Global variables use ${r.ram} bytes (${pct(r.ram, ramMax)}%) of dynamic memory, leaving ${ramMax - r.ram} bytes for local variables. Maximum is ${ramMax} bytes.`);
+    if (r.flash > flashMax) {
+      log.error("Sketch too big: it doesn't fit on the board. Try removing code or libraries you don't need.");
+      setStatus("Sketch too big");
+      return null;
+    }
+    if (r.ram > ramMax * 0.75) log.warn("Low memory available, stability problems may occur.");
+    log.success(`Done compiling in ${((performance.now() - t0) / 1000).toFixed(1)} s.`);
+    setStatus("Done compiling");
+    return r;
+  } catch (e) {
+    if (e.output) log.compilerOutput(e.output, { onLocation });
+    log.error(e.message);
+    const mine = (e.diagnostics || []).filter((d) => d.file === fileName);
+    editor.showDiagnostics(mine);
+    const first = mine.find((d) => d.severity === "error");
+    if (first) editor.goTo(first.line, first.column);
+    setStatus("Compilation failed");
+    return null;
+  }
+}
 
 async function uploadImage(image, label) {
   if (busy) return;
@@ -443,6 +482,23 @@ function init() {
 
   log.muted(`Arduino IDE v${__APP_VERSION__} (offline). Your sketch is saved automatically in this browser.`);
   editor.focus();
+
+  if (compilerAvailable) {
+    // Load the compiler in the background so the first Verify is quick.
+    setStatus("Loading compiler…");
+    setTimeout(() => {
+      startCompiler().then(
+        (info) => {
+          log.muted(`Compiler ready (GCC 7.3.0, Arduino AVR core ${info.manifest.core.version}, ${info.manifest.libraries.length} libraries) in ${(info.ms / 1000).toFixed(1)} s.`);
+          if ($("status-text").textContent === "Loading compiler…") setStatus("Ready");
+        },
+        (e) => {
+          log.error("The compiler couldn't be loaded: " + e.message);
+          setStatus("Compiler unavailable");
+        },
+      );
+    }, 50);
+  }
 }
 
 init();

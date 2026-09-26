@@ -19,13 +19,16 @@ let sp = null;
 let rxBuf = [];
 
 async function bridge(page) {
-  await page.exposeFunction("__spOpen", (baudRate) =>
-    new Promise((res, rej) => {
+  await page.exposeFunction("__spOpen", async (baudRate) => {
+    // A real browser closes a page's ports when it reloads; the bridge must do the same.
+    if (sp?.isOpen) await new Promise((r) => sp.close(() => r()));
+    return new Promise((res, rej) => {
       rxBuf = [];
       sp = new SerialPort({ path: portPath, baudRate, autoOpen: false });
       sp.on("data", (d) => rxBuf.push(...d));
       sp.open((e) => (e ? rej(new Error(e.message)) : res()));
-    }));
+    });
+  });
   await page.exposeFunction("__spClose", () => new Promise((res) => (sp?.isOpen ? sp.close(() => res()) : res())));
   await page.exposeFunction("__spWrite", (bytes) =>
     new Promise((res, rej) => sp.write(Buffer.from(bytes), (e) => (e ? rej(e) : sp.drain(() => res())))));
@@ -157,6 +160,24 @@ try {
     await page.waitForFunction(() => document.getElementById("mon-connect").textContent === "Disconnect", null, { timeout: 5000 });
     await page.waitForFunction(() => document.getElementById("mon-out").textContent.includes("SerialEcho ready"), null, { timeout: 10000 });
     return r;
+  });
+
+  await step("compile in the browser and upload with the Upload button", async () => {
+    const stamp = "built-in-browser-" + Date.now().toString(36);
+    const code = fixture("SerialEcho.ino").replace("SerialEcho ready", stamp);
+    // Load the sketch the way autosave would, then reload so the editor picks it up.
+    await page.evaluate((c) => localStorage.setItem("arduino-ide.sketch", JSON.stringify({ name: "BrowserBuilt.ino", code: c, savedCode: c })), code);
+    await page.reload();
+    await page.waitForFunction(() => /Compiler ready/.test(document.getElementById("output").textContent), null, { timeout: 60000 });
+    await page.evaluate(() => (document.getElementById("status-text").textContent = ""));
+    await page.click("#btn-upload");
+    await page.waitForFunction(() => /Upload (complete|failed)|Compilation failed/.test(document.getElementById("status-text").textContent), null, { timeout: 90000 });
+    const out = (await outputText()).trim().split("\n");
+    if ((await page.textContent("#status-text")) !== "Upload complete") throw new Error(out.slice(-4).join(" | "));
+    await page.click('.tabs button[data-tab="monitor"]');
+    await page.click("#mon-connect");
+    await page.waitForFunction((s) => document.getElementById("mon-out").textContent.includes(s), stamp, { timeout: 10000 });
+    return out.filter((l) => /Sketch uses|Done/.test(l)).join(" / ");
   });
 
   await step("monitor disconnects cleanly", async () => {

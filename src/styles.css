@@ -121,6 +121,8 @@ button:disabled { opacity: 0.45; cursor: default; }
 .console .success { color: var(--success); }
 .console .warn { color: var(--warn); }
 .console .muted { color: var(--muted); }
+.console .link { cursor: pointer; }
+.console .link:hover { text-decoration: underline; }
 
 .monitor-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
 .monitor-bar label { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }

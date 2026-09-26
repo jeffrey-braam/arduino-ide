@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Guarantees the page never contacts the network: no fetches, no external scripts or styles. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src blob:; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Arduino IDE</title>
 <style>/*INLINE_CSS*/</style>
 </head>
@@ -67,6 +69,7 @@
     <span id="status-version"></span>
   </footer>
 </div>
+<!--COMPILER_PACK-->
 <script>/*INLINE_JS*/</script>
 </body>
 </html>

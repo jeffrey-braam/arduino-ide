@@ -1,37 +1,75 @@
 // Bundles src/ into a single self-contained dist/arduino-ide.html.
-// Usage: node build/build.mjs [--watch]
+// If build/cache/compiler-pack.bin.gz exists (see prepare-compiler.mjs), the compiler is embedded.
+// Usage: node build/build.mjs [--watch] [--no-compiler]
 import * as esbuild from "esbuild";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const src = (p) => path.join(root, "src", p);
 const outFile = path.join(root, "dist", "arduino-ide.html");
+const packFile = path.join(root, "build/cache/compiler-pack.bin.gz");
 const watch = process.argv.includes("--watch");
+const withCompiler = !process.argv.includes("--no-compiler") && existsSync(packFile);
 const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 
-async function assemble(js) {
-  const [html, css] = await Promise.all([readFile(src("index.html"), "utf8"), readFile(src("styles.css"), "utf8")]);
-  // "</script" inside the bundle would end the inline <script> early; "<\/script" is equivalent in JS.
-  const safeJs = js.replace(/<\/(script)/gi, "<\\/$1");
-  const out = html
-    .replace("/*INLINE_CSS*/", () => css)
-    .replace("/*INLINE_JS*/", () => safeJs);
-  await mkdir(path.dirname(outFile), { recursive: true });
-  await writeFile(outFile, out);
-  console.log(`Built ${path.relative(root, outFile)} (${(out.length / 1024).toFixed(0)} KB)`);
+// "</script" inside inline content would end the <script> element early; "<\/script" is equivalent in JS.
+const escapeScript = (js) => js.replace(/<\/(script)/gi, "<\\/$1");
+
+async function buildWorker() {
+  if (!withCompiler) return "";
+  const r = await esbuild.build({
+    entryPoints: [src("compiler/worker.js")],
+    bundle: true,
+    format: "iife",
+    minify: true,
+    target: ["chrome100"],
+    write: false,
+    logLevel: "error",
+    // Emscripten glue references Node modules behind runtime checks that are false in a browser.
+    external: ["module", "fs", "path", "crypto", "url", "worker_threads", "child_process"],
+    supported: { "top-level-await": true },
+  });
+  return r.outputFiles[0].text;
 }
 
-const assemblePlugin = {
-  name: "assemble-html",
-  setup(build) {
-    build.onEnd(async (result) => {
-      if (result.errors.length) return;
-      await assemble(result.outputFiles[0].text);
-    });
+let packBase64 = "";
+async function assemble(js) {
+  const [html, css] = await Promise.all([readFile(src("index.html"), "utf8"), readFile(src("styles.css"), "utf8")]);
+  const pack = withCompiler ? `<script type="application/octet-stream" id="compiler-pack">${packBase64}</script>` : "";
+  const out = html
+    .replace("/*INLINE_CSS*/", () => css)
+    .replace("<!--COMPILER_PACK-->", () => pack)
+    .replace("/*INLINE_JS*/", () => escapeScript(js));
+  await mkdir(path.dirname(outFile), { recursive: true });
+  await writeFile(outFile, out);
+  const mb = (out.length / 1048576).toFixed(1);
+  console.log(`Built ${path.relative(root, outFile)} (${mb} MB${withCompiler ? ", with compiler" : ", no compiler"})`);
+}
+
+const workerSource = await buildWorker();
+if (withCompiler) packBase64 = (await readFile(packFile)).toString("base64");
+else console.warn("Compiler pack not found; building without the compiler. Run: node build/prepare-compiler.mjs");
+
+const plugins = [
+  {
+    name: "compiler-worker-source",
+    setup(build) {
+      build.onResolve({ filter: /^compiler-worker-source$/ }, () => ({ path: "worker", namespace: "worker-src" }));
+      build.onLoad({ filter: /.*/, namespace: "worker-src" }, () => ({ contents: workerSource, loader: "text" }));
+    },
   },
-};
+  {
+    name: "assemble-html",
+    setup(build) {
+      build.onEnd(async (result) => {
+        if (!result.errors.length) await assemble(result.outputFiles[0].text);
+      });
+    },
+  },
+];
 
 const options = {
   entryPoints: [src("main.js")],
@@ -47,7 +85,7 @@ const options = {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),
   },
-  plugins: [assemblePlugin],
+  plugins,
 };
 
 if (watch) {

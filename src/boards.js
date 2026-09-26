@@ -4,6 +4,7 @@ export const BOARDS = {
     fqbn: "arduino:avr:uno",
     mcu: "atmega328p",
     fcpu: 16000000,
+    ramSize: 2048,
     upload: {
       protocol: "stk500v1",
       baudRate: 115200,

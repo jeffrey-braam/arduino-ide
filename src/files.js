@@ -1,6 +1,6 @@
 // Opening and saving files. Uses the File System Access API where available (Chrome, ChromeOS),
 // falling back to a file input and plain downloads.
-const SKETCH_TYPES = [{ description: "Arduino sketch", accept: { "text/plain": [".ino", ".cpp", ".h", ".hpp", ".txt"] } }];
+const SKETCH_TYPES = [{ description: "Arduino sketch", accept: { "text/plain": [".ino", ".pde", ".cpp", ".h", ".hpp", ".txt"] } }];
 const HEX_TYPES = [{ description: "Compiled sketch", accept: { "text/plain": [".hex"] } }];
 
 const hasFsa = typeof window !== "undefined" && "showOpenFilePicker" in window && "showSaveFilePicker" in window;
@@ -41,7 +41,7 @@ async function openText(types, accept, multiple) {
 }
 
 // A sketch can be several files (tabs); select them all to open them together.
-export const openSketchFiles = () => openText(SKETCH_TYPES, ".ino,.cpp,.h,.hpp,.txt", true);
+export const openSketchFiles = () => openText(SKETCH_TYPES, ".ino,.pde,.cpp,.h,.hpp,.txt", true);
 export const openHexFile = async () => (await openText(HEX_TYPES, ".hex", false))[0] ?? null;
 
 export async function writeToHandle(handle, text) {

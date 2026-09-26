@@ -95,8 +95,12 @@ function libraryExamples(dir) {
       if (!e.isDirectory()) continue;
       const p = path.join(d, e.name);
       const r = rel ? rel + "/" + e.name : e.name;
-      if (fs.existsSync(path.join(p, e.name + ".ino"))) {
-        const files = fs.readdirSync(p).filter((f) => SKETCH_FILE.test(f) && fs.statSync(path.join(p, f)).isFile()).map((f) => ({ name: f, code: fs.readFileSync(path.join(p, f), "utf8") }));
+      // Older libraries still ship sketches as .pde, the pre-2011 extension; they're opened as .ino.
+      if (fs.existsSync(path.join(p, e.name + ".ino")) || fs.existsSync(path.join(p, e.name + ".pde"))) {
+        const files = fs
+          .readdirSync(p)
+          .filter((f) => (SKETCH_FILE.test(f) || /\.pde$/i.test(f)) && fs.statSync(path.join(p, f)).isFile())
+          .map((f) => ({ name: f.replace(/\.pde$/i, ".ino"), code: fs.readFileSync(path.join(p, f), "utf8") }));
         out.push({ name: r, files: orderFiles(files, e.name) });
       } else walk(p, r);
     }

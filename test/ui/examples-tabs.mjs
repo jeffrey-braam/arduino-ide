@@ -58,7 +58,7 @@ nextPrompt = null;
 await page.click("#btn-new"); // discard prompt: dialog auto-accepted
 await page.click("#btn-libraries");
 await page.waitForSelector(".lib-card");
-check("libraries listed", (await page.$$eval(".lib-card", (c) => c.length)) === 13);
+check("libraries listed", (await page.$$eval(".lib-card", (c) => c.length)) === 14);
 await shot("ui-libraries.png");
 await page.fill("#browser-search", "servo");
 await page.click(".lib-card:not([hidden]) button.primary");

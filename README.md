@@ -16,7 +16,7 @@ builds the file; students just get the HTML). The WebAssembly compiler tools are
 npm install
 arduino-cli core install arduino:avr@1.8.8
 arduino-cli lib install OneWire DallasTemperature "DHT sensor library" "Adafruit Unified Sensor" \
-  IRremote "PulseSensor Playground" Encoder Servo LiquidCrystal
+  IRremote "PulseSensor Playground" Encoder Servo LiquidCrystal CapacitiveSensor
 node build/prepare-compiler.mjs   # precompiles core + libraries -> build/cache/compiler-pack.bin.gz
 node build/prepare-examples.mjs   # built-in + library examples that compile for the Uno
 npm run build                     # -> dist/arduino-ide.html (~8 MB, the only file students need)

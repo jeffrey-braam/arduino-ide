@@ -63,7 +63,7 @@ export function validateTabName(input, s) {
 
 // Picks the main file among opened files: the .ino that defines setup(), else the first .ino.
 export function orderOpenedFiles(opened) {
-  const inos = opened.filter((f) => /\.ino$/i.test(f.name)).sort((a, b) => a.name.localeCompare(b.name));
+  const inos = opened.filter((f) => /\.(ino|pde)$/i.test(f.name)).sort((a, b) => a.name.localeCompare(b.name));
   const main = inos.find((f) => /\bvoid\s+setup\s*\(/.test(f.code)) ?? inos[0] ?? opened[0];
   return [main, ...opened.filter((f) => f !== main).sort((a, b) => a.name.localeCompare(b.name))];
 }

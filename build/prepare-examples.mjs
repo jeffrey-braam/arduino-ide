@@ -109,6 +109,49 @@ function libraryExamples(dir) {
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// ---------- Library licenses (curated in licenses/libraries.json) ----------
+const licensesDir = path.join(root, "licenses");
+const libraryLicenses = JSON.parse(fs.readFileSync(path.join(licensesDir, "libraries.json"), "utf8"));
+
+// The first /* ... */ comment that states a license, with comment decoration removed.
+function licenseComment(text) {
+  for (const m of text.matchAll(/\/\*([\s\S]*?)\*\//g)) {
+    if (/copyright|licen[cs]e|permission is hereby/i.test(m[1])) return m[1].split("\n").map((l) => l.replace(/^\s*\*?\s?/, "")).join("\n").trim();
+  }
+  return null;
+}
+
+// An AsciiDoc "== Section ==" up to the next heading.
+function docSection(text, name) {
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((l) => new RegExp(`^==\\s*${name}\\s*(==)?\\s*$`, "i").test(l));
+  if (start < 0) return null;
+  const end = lines.findIndex((l, i) => i > start && /^==\s/.test(l));
+  return lines.slice(start + 1, end < 0 ? undefined : end).join("\n").trim();
+}
+
+function libraryLicense(name, dir) {
+  const info = libraryLicenses[name];
+  if (!info) throw new Error(`No license entry for library ${name}: add it to licenses/libraries.json after checking its license.`);
+  const texts = fs
+    .readdirSync(dir)
+    .filter((f) => /^(licen[cs]e|copying)/i.test(f) && fs.statSync(path.join(dir, f)).isFile())
+    .map((f) => ({ title: f, text: fs.readFileSync(path.join(dir, f), "utf8") }));
+  if (info.notice) {
+    const n = info.notice;
+    let text;
+    if (n.repoFile) text = fs.readFileSync(path.join(licensesDir, n.repoFile), "utf8").trim();
+    else {
+      const src = fs.readFileSync(path.join(dir, n.file), "utf8");
+      text = n.section ? docSection(src, n.section) : licenseComment(src);
+    }
+    if (!text) throw new Error(`Couldn't find the license notice for ${name} (${JSON.stringify(n)})`);
+    texts.push({ title: n.repoFile ? "License notice" : `License notice in ${n.file}`, text });
+  }
+  if (!texts.length && !info.texts) throw new Error(`Library ${name} has no license text to show`);
+  return { license: info.license, licenseNote: info.note || "", licenseTexts: texts, sharedTexts: info.texts || [] };
+}
+
 function readProperties(dir) {
   const file = path.join(dir, "library.properties");
   const props = {};
@@ -172,7 +215,7 @@ for (const lib of tc.manifest.libraries) {
     sentence: p.sentence || "",
     paragraph: p.paragraph || "",
     url: p.url || "",
-    license: lib.license || p.license || "",
+    ...libraryLicense(lib.name, dir),
     // Headers to #include: the library's declared ones, else its top-level headers.
     includes: p.includes ? p.includes.split(",").map((s) => s.trim()).filter(Boolean) : lib.headers,
     examples: await keepCompiling(libraryExamples(dir), lib.displayName),

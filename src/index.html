@@ -28,6 +28,7 @@
     </label>
     <button id="btn-port" title="Choose which USB port the board is on">Select port</button>
     <button id="btn-upload-hex" title="Upload an already-compiled .hex file">Upload .hex</button>
+    <button id="btn-about" title="About this IDE, licenses and source code">About</button>
   </header>
   <div id="banner" class="banner" hidden></div>
   <div class="filebar">
@@ -75,12 +76,13 @@
     <span id="status-version"></span>
   </footer>
 </div>
-<dialog id="browser" aria-label="Examples and libraries">
+<dialog id="browser" aria-label="Examples, libraries and about">
   <div class="browser">
     <header class="browser-head">
       <nav class="browser-tabs" role="tablist">
         <button type="button" role="tab" data-view="examples" aria-selected="true">Examples</button>
         <button type="button" role="tab" data-view="libraries" aria-selected="false">Libraries</button>
+        <button type="button" role="tab" data-view="about" aria-selected="false">About</button>
       </nav>
       <input id="browser-search" type="search" placeholder="Search examples" aria-label="Search" autocomplete="off">
       <button type="button" id="browser-close" class="icon-button" aria-label="Close">&#x2715;</button>
@@ -102,10 +104,12 @@
     <div id="browser-libraries" class="browser-body library-list" hidden>
       <div id="library-list" class="library-grid"></div>
     </div>
+    <div id="browser-about" class="browser-body about" hidden></div>
   </div>
 </dialog>
 <!--COMPILER_PACK-->
 <!--EXAMPLES_PACK-->
+<!--ABOUT_PACK-->
 <script>/*INLINE_JS*/</script>
 </body>
 </html>

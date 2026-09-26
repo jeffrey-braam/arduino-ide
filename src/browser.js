@@ -5,11 +5,14 @@ import { takeEmbedded, gunzip } from "./embedded.js";
 const $ = (id) => document.getElementById(id);
 export const browserAvailable = Boolean(document.getElementById("examples-pack"));
 
+const unpackJson = (id) => gunzip(takeEmbedded(id)).then((bytes) => JSON.parse(new TextDecoder().decode(bytes)));
 let dataPromise = null;
 function loadData() {
-  dataPromise ??= gunzip(takeEmbedded("examples-pack")).then((bytes) => JSON.parse(new TextDecoder().decode(bytes)));
+  dataPromise ??= browserAvailable ? unpackJson("examples-pack") : Promise.resolve({ builtin: [], libraries: [] });
   return dataPromise;
 }
+let aboutPromise = null;
+const loadAbout = () => (aboutPromise ??= unpackJson("about-pack"));
 
 // "A <a@x>, B, C, D" -> "A, B, C and others" (e-mail addresses dropped)
 function shortAuthors(text) {
@@ -43,6 +46,8 @@ export function setupBrowser({ onOpenExample, onInclude }) {
     for (const b of dialog.querySelectorAll("[data-view]")) b.setAttribute("aria-selected", String(b.dataset.view === v));
     $("browser-examples").hidden = v !== "examples";
     $("browser-libraries").hidden = v !== "libraries";
+    $("browser-about").hidden = v !== "about";
+    search.hidden = v === "about";
     search.placeholder = v === "examples" ? "Search examples" : "Search libraries";
     applySearch();
   }
@@ -149,9 +154,11 @@ export function setupBrowser({ onOpenExample, onInclude }) {
     );
   }
 
+  let aboutRendered = false;
+
   // ---------- Search ----------
   function applySearch() {
-    if (!data) return;
+    if (!data || view === "about") return;
     const terms = search.value.toLowerCase().split(/\s+/).filter(Boolean);
     const matches = (text) => terms.every((t) => text.includes(t));
     if (view === "examples") {
@@ -195,7 +202,8 @@ export function setupBrowser({ onOpenExample, onInclude }) {
       dialog.showModal();
       search.value = "";
       setView(v);
-      search.focus();
+      if (v === "about") $("browser-close").focus();
+      else search.focus();
       if (!data) {
         $("example-code").textContent = "Loading…";
         data = await loadData();
@@ -203,6 +211,90 @@ export function setupBrowser({ onOpenExample, onInclude }) {
         renderLibraries();
         applySearch();
       }
+      if (v === "about" && !aboutRendered) {
+        aboutRendered = true;
+        renderAbout($("browser-about"), await loadAbout(), data.libraries);
+      }
     },
   };
+}
+
+// ---------- About ----------
+// One collapsible entry per component; the license texts are only put in the page when opened.
+function licenseEntry({ name, version, license, use, note, texts }) {
+  const details = el("details", { className: "license-entry" }, [
+    el("summary", {}, [
+      el("span", { className: "lic-name", textContent: name }),
+      version ? el("span", { className: "lic-version", textContent: version }) : "",
+      el("span", { className: "lic-license", textContent: license }),
+    ]),
+  ]);
+  details.addEventListener(
+    "toggle",
+    () => {
+      const body = [];
+      if (use) body.push(el("p", { textContent: use }));
+      if (note) body.push(el("p", { className: "muted", textContent: note }));
+      for (const t of texts) body.push(el("h4", { textContent: t.title }), el("pre", { className: "license-text", textContent: t.text }));
+      details.append(el("div", { className: "license-body" }, body));
+    },
+    { once: true },
+  );
+  return details;
+}
+
+function renderAbout(root, about, libraries) {
+  const shared = (ids) => ids.map((id) => about.texts[id]).filter(Boolean);
+  const section = (title, intro, entries) =>
+    el("section", { className: "about-section" }, [el("h3", { textContent: title }), intro ? el("p", { className: "muted", textContent: intro }) : "", ...entries]);
+
+  root.replaceChildren(
+    el("header", { className: "about-head" }, [
+      el("h2", { textContent: "Arduino IDE (offline)" }),
+      el("p", { className: "muted", textContent: `Version ${about.app.version}, built ${about.app.date}` }),
+      el("p", {
+        textContent:
+          "Everything runs inside this browser tab: the editor, the compiler and the uploader. The page is locked so it can't contact the internet; nothing you write leaves this computer.",
+      }),
+    ]),
+    el("section", { className: "about-section gpl-notice" }, [
+      el("h3", { textContent: "Free software and your right to the source code" }),
+      el("p", {
+        textContent:
+          "This IDE includes the GNU Compiler Collection (GCC) and GNU binutils. They are free software, released under the GNU General Public License, version 3 (GPL): you may use, study, share and change them. " +
+          "Whoever gives you a copy of this file must also make the complete source code of those programs available to you. The exact sources it was built from are listed below. To get a copy, ask the person who gave you this file (for example, your teacher).",
+      }),
+      el("p", { textContent: "The other parts of the IDE, and their licenses, are listed below. Open any entry to read its full license." }),
+      about.compilerSources
+        ? el("details", { className: "license-entry" }, [
+            el("summary", {}, [el("span", { className: "lic-name", textContent: "Exact sources of the compiler tools" })]),
+            el("div", { className: "license-body" }, [el("pre", { className: "license-text", textContent: about.compilerSources })]),
+          ])
+        : "",
+    ]),
+    section(
+      "Compiler and Arduino core",
+      "",
+      about.components.map((c) => licenseEntry({ name: c.name, version: c.version, license: c.license, use: c.use, note: c.note, texts: shared(c.texts) })),
+    ),
+    section(
+      "Arduino libraries",
+      libraries.length ? "" : "Library details aren't included in this copy of the IDE.",
+      libraries.map((l) =>
+        licenseEntry({
+          name: l.displayName,
+          version: l.version,
+          license: l.license,
+          use: [l.sentence, l.author ? "By " + l.author.replace(/\s*<[^>]*>/g, "") : ""].filter(Boolean).join(" "),
+          note: l.licenseNote,
+          texts: [...l.licenseTexts, ...shared(l.sharedTexts)],
+        }),
+      ),
+    ),
+    section(
+      "Code editor",
+      "The editor is CodeMirror 6 and the small packages it's built from.",
+      about.packages.map((p) => licenseEntry({ name: p.name, version: p.version, license: p.license, texts: [{ title: "License", text: p.text }] })),
+    ),
+  );
 }

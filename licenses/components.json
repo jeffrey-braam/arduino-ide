@@ -1,0 +1,73 @@
+{
+  "texts": {
+    "GPL-3.0": { "file": "GPL-3.0.txt", "title": "GNU General Public License, version 3 (COPYING3 from GCC 7.3.0)" },
+    "LGPL-3.0": { "file": "LGPL-3.0.txt", "title": "GNU Lesser General Public License, version 3 (COPYING3.LIB from GCC 7.3.0)" },
+    "GCC-exception-3.1": { "file": "GCC-exception-3.1.txt", "title": "GCC Runtime Library Exception, version 3.1 (COPYING.RUNTIME from GCC 7.3.0)" },
+    "LGPL-2.1": { "file": "LGPL-2.1.txt", "title": "GNU Lesser General Public License, version 2.1" },
+    "avr-libc": { "file": "avr-libc.txt", "title": "avr-libc license (modified BSD), from avr-libc 2.0.0" },
+    "emscripten": { "file": "emscripten.txt", "title": "Emscripten license (MIT / University of Illinois NCSA)" },
+    "CC0-1.0": { "file": "CC0-1.0.txt", "title": "Creative Commons CC0 1.0 Universal (from arduino-examples 1.10.3)" }
+  },
+  "components": [
+    {
+      "name": "GCC (cc1plus)",
+      "version": "7.3.0 with Arduino's AVR patches",
+      "use": "The C++ compiler that turns sketches into machine code",
+      "license": "GPL-3.0-or-later",
+      "texts": ["GPL-3.0"],
+      "gpl": true
+    },
+    {
+      "name": "GNU binutils (as, ld, objcopy)",
+      "version": "2.42",
+      "use": "Assembler, linker and .hex converter",
+      "license": "GPL-3.0-or-later",
+      "texts": ["GPL-3.0"],
+      "gpl": true
+    },
+    {
+      "name": "GMP, MPFR and MPC",
+      "version": "6.1.0, 3.1.4, 1.0.3",
+      "use": "Arithmetic libraries built into the compiler",
+      "license": "LGPL-3.0-or-later",
+      "texts": ["LGPL-3.0", "GPL-3.0"],
+      "gpl": true
+    },
+    {
+      "name": "libgcc",
+      "version": "7.3.0 (Arduino avr-gcc 7.3.0-atmel3.6.1-arduino7)",
+      "use": "Helper routines linked into every sketch",
+      "license": "GPL-3.0-or-later WITH GCC-exception-3.1",
+      "texts": ["GCC-exception-3.1", "GPL-3.0"],
+      "note": "The runtime library exception lets sketches built with it use any license."
+    },
+    {
+      "name": "avr-libc",
+      "version": "2.0.0",
+      "use": "Standard C library for AVR chips",
+      "license": "BSD-3-Clause (modified BSD)",
+      "texts": ["avr-libc"]
+    },
+    {
+      "name": "Arduino AVR core",
+      "version": "1.8.8",
+      "use": "Arduino functions such as digitalWrite, delay and Serial",
+      "license": "LGPL-2.1-or-later",
+      "texts": ["LGPL-2.1"]
+    },
+    {
+      "name": "Arduino built-in examples",
+      "version": "1.10.3",
+      "use": "Example sketches in the Built-in section",
+      "license": "CC0-1.0 (public domain)",
+      "texts": ["CC0-1.0"]
+    },
+    {
+      "name": "Emscripten runtime",
+      "version": "6.0.10",
+      "use": "Runs the compiler tools inside the browser",
+      "license": "MIT or NCSA",
+      "texts": ["emscripten"]
+    }
+  ]
+}

@@ -463,13 +463,11 @@ function includeLibrary(lib) {
 }
 
 function setupExamplesAndLibraries() {
-  if (!browserAvailable) {
+  if (!browserAvailable)
     for (const id of ["btn-examples", "btn-libraries"]) {
       $(id).disabled = true;
       $(id).title = "This copy of the IDE was built without examples.";
     }
-    return;
-  }
   const browser = setupBrowser({
     onOpenExample(example, where) {
       if (!confirmDiscard()) return;
@@ -482,6 +480,9 @@ function setupExamplesAndLibraries() {
   });
   $("btn-examples").addEventListener("click", () => browser.open("examples"));
   $("btn-libraries").addEventListener("click", () => browser.open("libraries"));
+  $("btn-about").addEventListener("click", () => browser.open("about"));
+  $("status-version").title = "About this IDE (built " + __BUILD_DATE__ + ")";
+  $("status-version").addEventListener("click", () => browser.open("about"));
 }
 
 // ---------- Layout ----------
@@ -546,7 +547,6 @@ function init() {
   });
   $("status-board").textContent = BOARDS[settings.board].name;
   $("status-version").textContent = "v" + __APP_VERSION__;
-  $("status-version").title = "Built " + __BUILD_DATE__;
 
   $("btn-new").addEventListener("click", actions.newSketch);
   $("btn-open").addEventListener("click", actions.open);

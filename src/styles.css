@@ -248,3 +248,41 @@ dialog#browser::backdrop { background: rgb(0 0 0 / 0.45); }
   #browser-examples { grid-template-columns: 1fr; grid-template-rows: 40% 1fr; }
   .example-list { border-right: none; border-bottom: 1px solid var(--border); }
 }
+
+/* ---------- About ---------- */
+.about { overflow: auto; padding: 16px 20px 24px; }
+.about-head h2 { margin: 0; font-size: 20px; }
+.about-head p { margin: 4px 0 0; max-width: 70ch; }
+.about-section { margin-top: 20px; }
+.about-section h3 { margin: 0 0 6px; font-size: 15px; }
+.about-section > p { margin: 0 0 8px; max-width: 75ch; }
+.gpl-notice { padding: 12px 14px; border: 1px solid var(--accent); border-radius: 8px; background: var(--bg); }
+.license-entry { border-bottom: 1px solid var(--border); }
+.license-entry summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 7px 4px;
+  cursor: pointer;
+}
+.license-entry summary:hover { background: var(--bg); }
+.lic-name { font-weight: 600; }
+.lic-version { color: var(--muted); font-size: 13px; }
+.lic-license { margin-left: auto; color: var(--muted); font-size: 13px; }
+.license-body { padding: 0 4px 12px 20px; }
+.license-body p { margin: 4px 0; }
+.license-body h4 { margin: 10px 0 4px; font-size: 13px; }
+.license-text {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--console-bg);
+  font: 12px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  white-space: pre-wrap;
+}
+#status-version { cursor: pointer; }
+#status-version:hover { text-decoration: underline; }

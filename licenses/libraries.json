@@ -1,0 +1,21 @@
+{
+  "_comment": "License of each bundled Arduino library. A library's own LICENSE/COPYING file is always included; 'notice' adds the license statement from a source file or README when there's no license file; 'texts' adds shared license texts from this folder.",
+  "Wire": { "license": "LGPL-2.1-or-later", "notice": { "file": "src/Wire.cpp" }, "texts": ["LGPL-2.1"] },
+  "SPI": { "license": "GPL-2.0 or LGPL-2.1", "notice": { "file": "src/SPI.cpp" }, "texts": ["LGPL-2.1"] },
+  "SoftwareSerial": { "license": "LGPL-2.1-or-later", "notice": { "file": "src/SoftwareSerial.cpp" }, "texts": ["LGPL-2.1"] },
+  "EEPROM": { "license": "LGPL-2.1-or-later", "notice": { "file": "src/EEPROM.h" }, "texts": ["LGPL-2.1"] },
+  "Servo": { "license": "LGPL-2.1-or-later", "notice": { "file": "src/Servo.h" } },
+  "OneWire": { "license": "MIT", "notice": { "file": "OneWire.cpp" } },
+  "DallasTemperature": { "license": "MIT" },
+  "DHT_sensor_library": { "license": "MIT" },
+  "Adafruit_Unified_Sensor": { "license": "Apache-2.0" },
+  "IRremote": { "license": "MIT" },
+  "PulseSensor_Playground": { "license": "MIT" },
+  "Encoder": { "license": "MIT", "notice": { "file": "Encoder.h" } },
+  "LiquidCrystal": { "license": "LGPL-2.1-or-later", "notice": { "file": "README.adoc", "section": "License" }, "texts": ["LGPL-2.1"] },
+  "CapacitiveSensor": {
+    "license": "MIT",
+    "notice": { "repoFile": "CapacitiveSensor-MIT.txt" },
+    "note": "Release 0.5.1 only says \"All rights reserved\". The original author later confirmed the MIT license, which was added upstream in commit 2faac42 (github.com/PaulStoffregen/CapacitiveSensor, issue #9); that notice is shown here."
+  }
+}

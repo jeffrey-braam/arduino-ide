@@ -92,6 +92,26 @@ await page.reload();
 await page.waitForSelector("#file-tabs .file-tab");
 check("old autosave format loads", (await tabs()).join() === "Old.ino" && (await page.$eval(".file-tab", (e) => e.classList.contains("dirty"))));
 
+// About tab: licenses and the GPL source offer
+await page.click("#btn-about");
+await page.waitForSelector("#browser-about .license-entry");
+check("About opens with the GPL notice", (await page.textContent("#browser-about .gpl-notice")).includes("GNU General Public License") && (await page.isHidden("#browser-search")));
+check("About lists compiler sources", (await page.textContent("#browser-about")).includes("Exact sources of the compiler tools"));
+const sections = await page.$$eval("#browser-about .about-section", (s) => s.map((x) => x.querySelectorAll(".license-entry").length));
+check("About lists components, 14 libraries and editor packages", sections[1] === 8 && sections[2] === 14 && sections[3] > 10, JSON.stringify(sections));
+const gcc = page.locator("#browser-about .license-entry", { hasText: "GCC (cc1plus)" });
+await gcc.locator("summary").click();
+check("opening an entry shows the full license", (await gcc.locator(".license-text").first().textContent()).includes("GNU GENERAL PUBLIC LICENSE"));
+const cap = page.locator("#browser-about .license-entry", { hasText: "CapacitiveSensor" });
+await cap.locator("summary").click();
+await cap.locator(".license-text").first().waitFor(); // the body is added by the toggle event
+check("CapacitiveSensor shows its MIT notice and why", (await cap.textContent()).includes("Permission is hereby granted") && (await cap.textContent()).includes("2faac42"));
+await shot("ui-about.png");
+await page.click("#browser-close");
+await page.click("#status-version");
+check("version in the status bar opens About", await page.isVisible("#browser-about"));
+await page.click("#browser-close");
+
 check("no page errors", errs.length === 0, errs.join(" | "));
 console.log(results.join("\n"));
 await browser.close();

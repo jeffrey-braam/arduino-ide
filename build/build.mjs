@@ -3,7 +3,8 @@
 // Usage: node build/build.mjs [--watch] [--no-compiler]
 import * as esbuild from "esbuild";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -41,12 +42,40 @@ let packBase64 = "";
 let examplesBase64 = "";
 const embed = (id, base64) => `<script type="application/octet-stream" id="${id}">${base64}</script>`;
 
-async function assemble(js) {
+// About/licenses data: components and license texts (licenses/), the exact compiler sources
+// (toolchain/out/SOURCES.md), and every npm package that ended up in the bundle.
+function aboutData(metafile) {
+  const licensesDir = path.join(root, "licenses");
+  const { texts, components } = JSON.parse(readFileSync(path.join(licensesDir, "components.json"), "utf8"));
+  for (const t of Object.values(texts)) t.text = readFileSync(path.join(licensesDir, t.file), "utf8");
+  const packages = new Map();
+  for (const input of Object.keys(metafile.inputs)) {
+    const m = input.match(/node_modules\/((@[^/]+\/)?[^/]+)\//);
+    if (!m || packages.has(m[1])) continue;
+    const dir = path.join(root, "node_modules", m[1]);
+    const meta = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8"));
+    const licenseFile = readdirSync(dir).find((f) => /^licen[cs]e/i.test(f));
+    if (!licenseFile) throw new Error(`Bundled package ${m[1]} has no license file`);
+    packages.set(m[1], { name: m[1], version: meta.version, license: meta.license, text: readFileSync(path.join(dir, licenseFile), "utf8") });
+  }
+  const sourcesFile = path.join(root, "toolchain/out/SOURCES.md");
+  return {
+    app: { version: pkg.version, date: new Date().toISOString().slice(0, 10) },
+    components,
+    texts,
+    packages: [...packages.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    compilerSources: existsSync(sourcesFile) ? readFileSync(sourcesFile, "utf8") : "",
+  };
+}
+
+async function assemble(js, metafile) {
+  const aboutBase64 = gzipSync(JSON.stringify(aboutData(metafile)), { level: 9 }).toString("base64");
   const [html, css] = await Promise.all([readFile(src("index.html"), "utf8"), readFile(src("styles.css"), "utf8")]);
   const out = html
     .replace("/*INLINE_CSS*/", () => css)
     .replace("<!--COMPILER_PACK-->", () => (withCompiler ? embed("compiler-pack", packBase64) : ""))
     .replace("<!--EXAMPLES_PACK-->", () => (withExamples ? embed("examples-pack", examplesBase64) : ""))
+    .replace("<!--ABOUT_PACK-->", () => embed("about-pack", aboutBase64))
     .replace("/*INLINE_JS*/", () => escapeScript(js));
   await mkdir(path.dirname(outFile), { recursive: true });
   await writeFile(outFile, out);
@@ -72,7 +101,7 @@ const plugins = [
     name: "assemble-html",
     setup(build) {
       build.onEnd(async (result) => {
-        if (!result.errors.length) await assemble(result.outputFiles[0].text);
+        if (!result.errors.length) await assemble(result.outputFiles[0].text, result.metafile);
       });
     },
   },
@@ -88,6 +117,7 @@ const options = {
   write: false,
   charset: "utf8",
   legalComments: "eof",
+  metafile: true, // lists the bundled npm packages for the About tab
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),

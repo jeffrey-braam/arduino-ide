@@ -35,23 +35,30 @@ async function buildWorker() {
   return r.outputFiles[0].text;
 }
 
+const examplesFile = path.join(root, "build/cache/examples.json.gz");
+const withExamples = existsSync(examplesFile);
 let packBase64 = "";
+let examplesBase64 = "";
+const embed = (id, base64) => `<script type="application/octet-stream" id="${id}">${base64}</script>`;
+
 async function assemble(js) {
   const [html, css] = await Promise.all([readFile(src("index.html"), "utf8"), readFile(src("styles.css"), "utf8")]);
-  const pack = withCompiler ? `<script type="application/octet-stream" id="compiler-pack">${packBase64}</script>` : "";
   const out = html
     .replace("/*INLINE_CSS*/", () => css)
-    .replace("<!--COMPILER_PACK-->", () => pack)
+    .replace("<!--COMPILER_PACK-->", () => (withCompiler ? embed("compiler-pack", packBase64) : ""))
+    .replace("<!--EXAMPLES_PACK-->", () => (withExamples ? embed("examples-pack", examplesBase64) : ""))
     .replace("/*INLINE_JS*/", () => escapeScript(js));
   await mkdir(path.dirname(outFile), { recursive: true });
   await writeFile(outFile, out);
   const mb = (out.length / 1048576).toFixed(1);
-  console.log(`Built ${path.relative(root, outFile)} (${mb} MB${withCompiler ? ", with compiler" : ", no compiler"})`);
+  console.log(`Built ${path.relative(root, outFile)} (${mb} MB${withCompiler ? ", with compiler" : ", no compiler"}${withExamples ? ", with examples" : ""})`);
 }
 
 const workerSource = await buildWorker();
 if (withCompiler) packBase64 = (await readFile(packFile)).toString("base64");
 else console.warn("Compiler pack not found; building without the compiler. Run: node build/prepare-compiler.mjs");
+if (withExamples) examplesBase64 = (await readFile(examplesFile)).toString("base64");
+else console.warn("Examples not found; building without them. Run: node build/prepare-examples.mjs");
 
 const plugins = [
   {

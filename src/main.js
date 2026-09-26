@@ -8,24 +8,10 @@ import { OutputLog } from "./log.js";
 import * as storage from "./storage.js";
 import * as files from "./files.js";
 import { compilerAvailable, compile, startCompiler } from "./compiler.js";
+import { browserAvailable, setupBrowser } from "./browser.js";
+import { makeSketch, newSketch, isDirty, markSaved, toStorage, fromStorage, validateTabName, orderOpenedFiles, baseName } from "./sketch.js";
 
 const $ = (id) => document.getElementById(id);
-
-const DEFAULT_CODE = `void setup() {
-  // put your setup code here, to run once:
-
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-
-}
-`;
-
-function newSketchName() {
-  const d = new Date();
-  return "sketch_" + d.toLocaleString("en", { month: "short" }).toLowerCase() + d.getDate() + ".ino";
-}
 
 // ---------- State ----------
 const settings = storage.loadSettings({
@@ -40,57 +26,105 @@ const settings = storage.loadSettings({
 if (!BOARDS[settings.board]) settings.board = DEFAULT_BOARD;
 const persistSettings = () => storage.saveSettings(settings);
 
-const restored = storage.loadSketch();
-const sketch = {
-  name: restored?.name || newSketchName(),
-  code: restored?.code ?? DEFAULT_CODE,
-  savedCode: restored?.savedCode ?? DEFAULT_CODE, // last version written to a file, for the unsaved marker
-  handle: null, // file handle for Save; not persisted across reloads
-};
+let sketch = fromStorage(storage.loadSketch()) ?? newSketch();
+const activeFile = () => sketch.files[sketch.active];
+const mainName = () => sketch.files[0].name;
+let lastDiagnostics = []; // from the last compile, for re-marking a tab when it's shown again
 
 let busy = false;
 const log = new OutputLog($("output"));
 const ports = new PortManager();
 const monitor = new SerialMonitor(ports, { out: $("mon-out"), settings });
 
-// ---------- Editor & autosave ----------
+// ---------- Editor, tabs & autosave ----------
 let autosaveTimer = 0;
 function autosave() {
   clearTimeout(autosaveTimer);
-  autosaveTimer = setTimeout(() => {
-    storage.saveSketch({ name: sketch.name, code: sketch.code, savedCode: sketch.savedCode });
-  }, 400);
-}
-
-function renderName() {
-  const el = $("sketch-name");
-  el.textContent = sketch.name;
-  el.classList.toggle("dirty", sketch.code !== sketch.savedCode);
-  document.title = sketch.name + " — Arduino IDE";
+  autosaveTimer = setTimeout(() => storage.saveSketch(toStorage(sketch)), 400);
 }
 
 const editor = createEditor($("editor"), {
-  doc: sketch.code,
+  doc: activeFile().code,
   onChange(text) {
-    sketch.code = text;
-    renderName();
+    activeFile().code = text;
+    renderTabs();
     autosave();
   },
 });
 
-function loadIntoEditor({ name, code, handle }) {
-  sketch.name = name;
-  sketch.code = code;
-  sketch.savedCode = code;
-  sketch.handle = handle;
-  editor.setText(code);
-  renderName();
+function renderTabs() {
+  $("file-tabs").replaceChildren(
+    ...sketch.files.map((f, i) => {
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "file-tab" + (i === 0 ? " main" : "") + (f.code !== f.savedCode ? " dirty" : "");
+      tab.setAttribute("role", "tab");
+      tab.setAttribute("aria-selected", String(i === sketch.active));
+      const label = document.createElement("span");
+      label.className = "tab-name";
+      label.textContent = f.name;
+      tab.append(label);
+      tab.addEventListener("click", () => switchTab(i));
+      if (i > 0) {
+        const close = document.createElement("span");
+        close.className = "tab-close";
+        close.textContent = "✕";
+        close.title = "Remove " + f.name + " from the sketch";
+        close.addEventListener("click", (e) => {
+          e.stopPropagation();
+          removeTab(i);
+        });
+        tab.append(close);
+      }
+      return tab;
+    }),
+  );
+  document.title = mainName() + (isDirty(sketch) ? " ●" : "") + " — Arduino IDE";
+}
+
+function showActiveDiagnostics() {
+  editor.showDiagnostics(lastDiagnostics.filter((d) => tabIndexFor(d.file) === sketch.active));
+}
+
+function switchTab(i) {
+  sketch.active = i;
+  editor.show(activeFile().name, activeFile().code);
+  showActiveDiagnostics();
+  renderTabs();
   autosave();
   editor.focus();
 }
 
-const isDirty = () => sketch.code !== sketch.savedCode;
-const confirmDiscard = () => !isDirty() || confirm(`“${sketch.name}” has unsaved changes. Discard them?`);
+function loadSketch(next) {
+  sketch = next;
+  lastDiagnostics = [];
+  editor.reset();
+  switchTab(sketch.active);
+}
+
+function addTab() {
+  const input = prompt("Name for the new tab (for example helpers.ino or pins.h):");
+  if (input === null) return;
+  const { name, error } = validateTabName(input, sketch);
+  if (error) {
+    alert(error);
+    return;
+  }
+  sketch.files.push({ name, code: "", savedCode: null });
+  switchTab(sketch.files.length - 1);
+}
+
+function removeTab(i) {
+  const f = sketch.files[i];
+  if (f.code.trim() && !confirm(`Remove “${f.name}” from the sketch? Its code will be deleted.`)) return;
+  sketch.files.splice(i, 1);
+  sketch.removed.push(f.name);
+  editor.forget(f.name);
+  lastDiagnostics = lastDiagnostics.filter((d) => d.file !== f.name);
+  switchTab(Math.min(sketch.active > i ? sketch.active - 1 : sketch.active, sketch.files.length - 1));
+}
+
+const confirmDiscard = () => !isDirty(sketch) || confirm(`“${mainName()}” has unsaved changes. Discard them?`);
 
 // ---------- Status bar & tabs ----------
 function setStatus(text) {
@@ -138,46 +172,65 @@ async function runFileAction(fn) {
   }
 }
 
+function afterSave(message) {
+  markSaved(sketch);
+  renderTabs();
+  autosave();
+  setStatus(message);
+}
+
 const actions = {
   newSketch: () =>
     runFileAction(async () => {
       if (!confirmDiscard()) return;
-      loadIntoEditor({ name: newSketchName(), code: DEFAULT_CODE, handle: null });
+      loadSketch(newSketch());
       setStatus("New sketch");
     }),
 
   open: () =>
     runFileAction(async () => {
       if (!confirmDiscard()) return;
-      const f = await files.openSketchFile();
-      if (!f) return;
-      loadIntoEditor({ name: f.name, code: f.text, handle: f.handle });
-      setStatus("Opened " + f.name);
+      const opened = await files.openSketchFiles();
+      if (!opened.length) return;
+      const ordered = orderOpenedFiles(opened.map((f) => ({ name: f.name, code: f.text, handle: f.handle })));
+      const next = makeSketch(ordered);
+      next.files.forEach((f, i) => (f.handle = ordered[i].handle));
+      loadSketch(next);
+      setStatus("Opened " + ordered.map((f) => f.name).join(", "));
     }),
 
+  // Writes back to where the sketch came from: its folder, or each file's own handle.
   save: () =>
     runFileAction(async () => {
-      if (!sketch.handle) return actions.saveAs();
-      const code = sketch.code;
-      await files.writeToHandle(sketch.handle, code);
-      sketch.savedCode = code;
-      renderName();
-      autosave();
-      setStatus("Saved " + sketch.name);
+      if (sketch.dirHandle) {
+        await files.writeFolder(sketch.dirHandle, sketch.files, sketch.removed);
+        return afterSave(`Saved ${sketch.files.length} files to ${sketch.dirHandle.name}`);
+      }
+      if (sketch.files.every((f) => f.handle) && !sketch.removed.length) {
+        for (const f of sketch.files) await files.writeToHandle(f.handle, f.code);
+        return afterSave("Saved " + sketch.files.map((f) => f.name).join(", "));
+      }
+      return actions.saveAs();
     }),
 
   saveAs: () =>
     runFileAction(async () => {
-      const code = sketch.code;
-      const suggested = /\.\w+$/.test(sketch.name) ? sketch.name : sketch.name + ".ino";
-      const r = await files.saveAs(suggested, code);
+      if (sketch.files.length === 1) {
+        const main = sketch.files[0];
+        const suggested = /\.\w+$/.test(main.name) ? main.name : main.name + ".ino";
+        const r = await files.saveAs(suggested, main.code);
+        if (!r) return;
+        editor.rename(main.name, r.name);
+        main.name = r.name;
+        main.handle = r.handle;
+        sketch.dirHandle = null;
+        return afterSave(r.handle ? "Saved " + r.name : "Downloaded " + r.name);
+      }
+      const r = await files.saveFolderAs(baseName(mainName()), sketch.files);
       if (!r) return;
-      sketch.name = r.name;
-      sketch.handle = r.handle;
-      sketch.savedCode = code;
-      renderName();
-      autosave();
-      setStatus(r.handle ? "Saved " + r.name : "Downloaded " + r.name);
+      sketch.dirHandle = r.dirHandle;
+      for (const f of sketch.files) f.handle = null;
+      afterSave(r.dirHandle ? `Saved ${sketch.files.length} files to folder ${r.dirHandle.name}` : `Downloaded ${sketch.files.length} files`);
     }),
 
   async selectPort() {
@@ -209,7 +262,7 @@ const actions = {
     } finally {
       setBusy(false);
     }
-    if (result) await uploadImage(result.image, sketch.name);
+    if (result) await uploadImage(result.image, mainName());
   },
 
   async uploadHex() {
@@ -236,7 +289,17 @@ const actions = {
 };
 
 // The compiler needs a .ino name for the main file; a sketch opened as .txt or .cpp still compiles.
-const mainFileName = () => (/\.ino$/i.test(sketch.name) ? sketch.name : sketch.name.replace(/\.[^.]*$/, "") + ".ino");
+const compileName = (i) => (i === 0 && !/\.ino$/i.test(sketch.files[0].name) ? baseName(sketch.files[0].name) + ".ino" : sketch.files[i].name);
+
+// Which tab a compiler message is about (-1 for library files).
+const tabIndexFor = (file) => sketch.files.findIndex((f, i) => compileName(i) === file);
+
+function goToLocation(file, line, column) {
+  const i = tabIndexFor(file);
+  if (i < 0) return;
+  if (i !== sketch.active) switchTab(i);
+  editor.goTo(line, column);
+}
 
 // Compiles the sketch, reporting to the Output panel and editor. Resolves with the result or null.
 async function compileSketch() {
@@ -246,16 +309,17 @@ async function compileSketch() {
     return null;
   }
   const board = BOARDS[settings.board];
-  const fileName = mainFileName();
+  lastDiagnostics = [];
   editor.showDiagnostics([]);
-  log.info(`Compiling ${fileName} for ${board.name}…`);
+  log.info(`Compiling ${mainName()} for ${board.name}…`);
   setStatus("Compiling…");
-  const onLocation = (file, line, column) => file === fileName && editor.goTo(line, column);
+  const onLocation = goToLocation;
   const t0 = performance.now();
   try {
-    const r = await compile([{ name: fileName, code: sketch.code }], { log: (m) => log.muted(m) });
+    const r = await compile(sketch.files.map((f, i) => ({ name: compileName(i), code: f.code })), { log: (m) => log.muted(m) });
     if (r.output.trim()) log.compilerOutput(r.output, { onLocation });
-    editor.showDiagnostics(r.warnings.filter((d) => d.file === fileName));
+    lastDiagnostics = r.warnings.filter((d) => tabIndexFor(d.file) >= 0);
+    showActiveDiagnostics();
 
     const flashMax = board.upload.maxSize;
     const ramMax = board.ramSize;
@@ -274,10 +338,10 @@ async function compileSketch() {
   } catch (e) {
     if (e.output) log.compilerOutput(e.output, { onLocation });
     log.error(e.message);
-    const mine = (e.diagnostics || []).filter((d) => d.file === fileName);
-    editor.showDiagnostics(mine);
-    const first = mine.find((d) => d.severity === "error");
-    if (first) editor.goTo(first.line, first.column);
+    lastDiagnostics = (e.diagnostics || []).filter((d) => tabIndexFor(d.file) >= 0);
+    showActiveDiagnostics();
+    const first = lastDiagnostics.find((d) => d.severity === "error");
+    if (first) goToLocation(first.file, first.line, first.column);
     setStatus("Compilation failed");
     return null;
   }
@@ -383,6 +447,43 @@ function setupMonitorUi() {
   });
 }
 
+// ---------- Examples & Libraries ----------
+function includeLibrary(lib) {
+  const code = activeFile().code;
+  const escape = (h) => h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const missing = lib.includes.filter((h) => !new RegExp(`#\\s*include\\s*[<"]${escape(h)}[>"]`).test(code));
+  if (!missing.length) {
+    setStatus(`${lib.displayName} is already included`);
+    editor.focus();
+    return;
+  }
+  const lines = missing.map((h) => `#include <${h}>`);
+  editor.insertIncludes(lines);
+  setStatus("Added " + lines.join(", "));
+}
+
+function setupExamplesAndLibraries() {
+  if (!browserAvailable) {
+    for (const id of ["btn-examples", "btn-libraries"]) {
+      $(id).disabled = true;
+      $(id).title = "This copy of the IDE was built without examples.";
+    }
+    return;
+  }
+  const browser = setupBrowser({
+    onOpenExample(example, where) {
+      if (!confirmDiscard()) return;
+      loadSketch(makeSketch(example.files));
+      const name = example.name.split("/").pop();
+      log.info(`Opened the “${name}” example (${where}). It's a copy: use Save As to keep your changes.`);
+      setStatus("Opened example " + name);
+    },
+    onInclude: includeLibrary,
+  });
+  $("btn-examples").addEventListener("click", () => browser.open("examples"));
+  $("btn-libraries").addEventListener("click", () => browser.open("libraries"));
+}
+
 // ---------- Layout ----------
 function setupSplitter() {
   const splitter = $("splitter");
@@ -455,12 +556,14 @@ function init() {
   $("btn-upload").addEventListener("click", actions.upload);
   $("btn-upload-hex").addEventListener("click", actions.uploadHex);
   $("btn-port").addEventListener("click", actions.selectPort);
+  $("btn-add-tab").addEventListener("click", addTab);
   for (const b of document.querySelectorAll(".tabs button")) b.addEventListener("click", () => showTab(b.dataset.tab));
 
+  setupExamplesAndLibraries();
   setupMonitorUi();
   setupSplitter();
   setupShortcuts();
-  renderName();
+  switchTab(sketch.active);
   renderMonitorState();
   showTab(settings.tab);
 

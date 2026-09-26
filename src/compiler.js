@@ -1,22 +1,16 @@
 // Main-thread side of the compiler: starts the worker with the embedded compiler data and
 // sends it builds. The worker source and the gzipped data are inlined into the page at build time.
 import workerSource from "compiler-worker-source";
+import { takeEmbedded } from "./embedded.js";
 
 const packElement = typeof document !== "undefined" ? document.getElementById("compiler-pack") : null;
 export const compilerAvailable = Boolean(packElement && workerSource);
 
 let worker = null;
 let ready = null; // Promise resolved when the toolchain is loaded
+let packBytes = null; // decoded once; each worker gets a copy so a crashed one can be replaced
 let nextId = 1;
 const pending = new Map();
-
-function decodeBase64(text) {
-  if (typeof Uint8Array.fromBase64 === "function") return Uint8Array.fromBase64(text.trim());
-  const bin = atob(text.trim());
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
 
 // Starts loading the compiler in the background. Safe to call more than once.
 export function startCompiler() {
@@ -25,8 +19,8 @@ export function startCompiler() {
     const url = URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" }));
     worker = new Worker(url);
     URL.revokeObjectURL(url);
-    const pack = decodeBase64(packElement.textContent);
-    packElement.textContent = ""; // free the ~8 MB string
+    packBytes ??= takeEmbedded("compiler-pack");
+    const pack = packBytes.slice();
     worker.onmessage = ({ data: msg }) => {
       if (msg.type === "ready") resolve(msg);
       else if (msg.type === "init-error") reject(new Error(msg.message));

@@ -19,6 +19,9 @@
     <button id="btn-open" title="Open (Ctrl+O)">Open</button>
     <button id="btn-save" title="Save (Ctrl+S)">Save</button>
     <button id="btn-saveas" title="Save As (Ctrl+Shift+S)">Save As</button>
+    <span class="sep"></span>
+    <button id="btn-examples" title="Open an example sketch">Examples</button>
+    <button id="btn-libraries" title="See the libraries you can use, and add them to your sketch">Libraries</button>
     <span class="spacer"></span>
     <label class="field">Board
       <select id="board-select"></select>
@@ -27,7 +30,10 @@
     <button id="btn-upload-hex" title="Upload an already-compiled .hex file">Upload .hex</button>
   </header>
   <div id="banner" class="banner" hidden></div>
-  <div class="filebar"><span id="sketch-name"></span></div>
+  <div class="filebar">
+    <div id="file-tabs" class="file-tabs" role="tablist" aria-label="Sketch files"></div>
+    <button id="btn-add-tab" class="add-tab" title="Add a file (tab) to the sketch" aria-label="Add tab">+</button>
+  </div>
   <main id="editor"></main>
   <div id="splitter" role="separator" aria-orientation="horizontal" title="Drag to resize"></div>
   <section id="bottom">
@@ -69,7 +75,37 @@
     <span id="status-version"></span>
   </footer>
 </div>
+<dialog id="browser" aria-label="Examples and libraries">
+  <div class="browser">
+    <header class="browser-head">
+      <nav class="browser-tabs" role="tablist">
+        <button type="button" role="tab" data-view="examples" aria-selected="true">Examples</button>
+        <button type="button" role="tab" data-view="libraries" aria-selected="false">Libraries</button>
+      </nav>
+      <input id="browser-search" type="search" placeholder="Search examples" aria-label="Search" autocomplete="off">
+      <button type="button" id="browser-close" class="icon-button" aria-label="Close">&#x2715;</button>
+    </header>
+    <div id="browser-examples" class="browser-body">
+      <div id="example-list" class="example-list"></div>
+      <section class="example-preview" aria-live="polite">
+        <div class="preview-head">
+          <div>
+            <h2 id="example-title"></h2>
+            <p id="example-where" class="muted"></p>
+          </div>
+          <button type="button" id="example-open" class="primary">Open</button>
+        </div>
+        <div id="example-files" class="example-files" hidden></div>
+        <pre id="example-code" class="example-code"></pre>
+      </section>
+    </div>
+    <div id="browser-libraries" class="browser-body library-list" hidden>
+      <div id="library-list" class="library-grid"></div>
+    </div>
+  </div>
+</dialog>
 <!--COMPILER_PACK-->
+<!--EXAMPLES_PACK-->
 <script>/*INLINE_JS*/</script>
 </body>
 </html>

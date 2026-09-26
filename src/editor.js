@@ -74,19 +74,53 @@ export function createEditor(parent, { doc, onChange, keys = [] }) {
   ];
 
   const view = new EditorView({ parent, state: EditorState.create({ doc, extensions: extensions() }) });
+  const applyTheme = () => view.dispatch({ effects: theme.reconfigure(darkQuery.matches ? oneDark : []) });
+  darkQuery.addEventListener("change", applyTheme);
 
-  darkQuery.addEventListener("change", () => {
-    view.dispatch({ effects: theme.reconfigure(darkQuery.matches ? oneDark : []) });
-  });
+  // One editor state per open file (tab), so each keeps its own undo history and cursor.
+  const states = new Map();
+  let currentKey = null;
 
   return {
     view,
     getText: () => view.state.doc.toString(),
-    // Replaces the document and clears undo history (used when opening another sketch).
-    setText(text) {
-      view.setState(EditorState.create({ doc: text, extensions: extensions() }));
+
+    // Shows the file `key`, creating its state from `text` the first time.
+    show(key, text) {
+      if (currentKey !== null) states.set(currentKey, view.state);
+      currentKey = key;
+      view.setState(states.get(key) ?? EditorState.create({ doc: text, extensions: extensions() }));
+      applyTheme(); // a stored state may predate a light/dark switch
+    },
+    // Forgets every stored state (another sketch was opened).
+    reset() {
+      states.clear();
+      currentKey = null;
+    },
+    forget(key) {
+      states.delete(key);
+    },
+    rename(oldKey, newKey) {
+      if (states.has(oldKey)) states.set(newKey, states.get(oldKey));
+      states.delete(oldKey);
+      if (currentKey === oldKey) currentKey = newKey;
     },
     focus: () => view.focus(),
+
+    // Adds #include lines after the includes already at the top of the file (or at line 1).
+    insertIncludes(lines) {
+      const doc = view.state.doc;
+      let after = 0; // line number of the last leading #include, 0 if none
+      for (let n = 1; n <= doc.lines; n++) {
+        const text = doc.line(n).text.trim();
+        if (/^#\s*include\b/.test(text)) after = n;
+        else if (text && !text.startsWith("//") && !text.startsWith("/*") && !text.startsWith("*")) break;
+      }
+      const at = after ? doc.line(after).to : 0;
+      const insert = after ? "\n" + lines.join("\n") : lines.join("\n") + "\n\n";
+      view.dispatch({ changes: { from: at, insert }, selection: { anchor: at + insert.length }, scrollIntoView: true });
+      view.focus();
+    },
 
     // Compiler messages as underlines + gutter markers. items: { line, column, severity, message }
     showDiagnostics(items) {

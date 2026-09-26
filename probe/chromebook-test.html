@@ -189,11 +189,15 @@ function withTimeout(promise, ms, what) {
 function checkEnvironment() {
   const ua = navigator.userAgent;
   const chrome = (ua.match(/Chrome\/(\d+)/) || [])[1];
+  const firefox = (ua.match(/Firefox\/(\d+)/) || [])[1];
+  const edge = (ua.match(/Edg\/(\d+)/) || [])[1];
   const isCrOS = /CrOS/.test(ua);
-  report("Device", "Browser", "INFO", (isCrOS ? "ChromeOS" : navigator.platform) + ", Chrome " + (chrome || "not detected") + " | " + ua);
-  if (!chrome) report("Device", "Chrome version", "WARN", "This does not look like Chrome. Web Serial only works in Chrome/Edge.");
-  else if (+chrome < 89) report("Device", "Chrome version", "FAIL", "Chrome " + chrome + " is too old; Web Serial needs 89 or newer.");
-  else report("Device", "Chrome version", "PASS", "Chrome " + chrome);
+  const browser = firefox ? "Firefox " + firefox : edge ? "Edge " + edge : chrome ? "Chrome " + chrome : "unknown browser";
+  report("Device", "Browser", "INFO", (isCrOS ? "ChromeOS" : navigator.platform) + ", " + browser + " | " + ua);
+  if (firefox || !chrome)
+    report("Device", "Browser check", "WARN", browser + ". Chromebooks use Chrome, so run this test in Chrome or Edge for results that apply to them.");
+  else if (+chrome < 89) report("Device", "Browser check", "FAIL", browser + " is too old; Web Serial needs version 89 or newer.");
+  else report("Device", "Browser check", "PASS", browser + (isCrOS ? " on ChromeOS" : ""));
 
   const proto = location.protocol;
   if (proto === "file:") report("Device", "Opened as", "PASS", "Local file (" + location.pathname + ")");
@@ -466,29 +470,46 @@ async function stkCommand(port, rx, bytes, respLen) {
   return r.slice(1, -1);
 }
 
+// After reset, the Uno's Optiboot blinks the LED for ~0.4 s without reading serial, and its UART
+// only buffers ~2 bytes. Two syncs queued during the blink overflow it; it then sees a stray byte
+// where it expects CRC_EOP and jumps to the sketch. So wait out the blink, then send one sync at a
+// time. Optiboot keeps listening for ~1 s after the blink, which fits all four tries.
 async function stkSync(port, rx) {
-  for (let i = 0; i < 8; i++) {
+  await sleep(450); // the reset already waited 50 ms, so the first sync goes out ~500 ms after reset
+  for (let i = 0; i < 4; i++) {
     rx.clear();
     await send(port, [STK.GET_SYNC, STK.CRC_EOP]);
-    const r = await rx.read(2, 150);
-    if (r && r[0] === STK.INSYNC && r[1] === STK.OK) {
-      await sleep(20);
-      rx.clear();
-      await send(port, [STK.GET_SYNC, STK.CRC_EOP]);
-      const r2 = await rx.read(2, 250);
-      if (r2 && r2[0] === STK.INSYNC && r2[1] === STK.OK) return true;
-    }
+    const r = await rx.read(2, 300);
+    if (r && r[0] === STK.INSYNC && r[1] === STK.OK) return true;
   }
   return false;
 }
 
-async function resetBoard(port) {
-  // Same sequence avrdude uses: drop DTR/RTS, then raise them to pulse the Uno's reset line.
-  await port.setSignals({ dataTerminalReady: false, requestToSend: false });
-  await sleep(250);
-  await port.setSignals({ dataTerminalReady: true, requestToSend: true });
-  await sleep(50);
-}
+// Two ways to pulse the Uno's reset line (it resets when DTR goes from off to on).
+const RESET_METHODS = {
+  // Same sequence avrdude uses: drop DTR/RTS, then raise them.
+  signals: {
+    label: "DTR pulse",
+    async open(port, baud) {
+      await port.open({ baudRate: baud });
+      await port.setSignals({ dataTerminalReady: false, requestToSend: false });
+      await sleep(250);
+      await port.setSignals({ dataTerminalReady: true, requestToSend: true });
+      await sleep(50);
+    },
+  },
+  // Doesn't rely on setSignals: closing the port drops DTR, reopening raises it.
+  reopen: {
+    label: "close/reopen",
+    async open(port, baud) {
+      await port.open({ baudRate: baud });
+      await port.close();
+      await sleep(250);
+      await port.open({ baudRate: baud });
+      await sleep(50);
+    },
+  },
+};
 
 function serialRequestError(e) {
   if (e && e.name === "NotFoundError")
@@ -516,23 +537,26 @@ async function testConnect() {
   }
   report("Arduino", "Choose port", "PASS", "Picked " + describePort(port));
 
-  let found = false;
-  for (const baud of [115200, 57600]) {
-    report("Arduino", "Bootloader", "WAIT", "Trying " + baud + " baud…");
+  const attempts = [[115200, "signals"], [115200, "reopen"], [57600, "signals"], [57600, "reopen"]];
+  let found = false, busy = false;
+  for (let n = 0; n < attempts.length && !found && !busy; n++) {
+    const [baud, methodKey] = attempts[n];
+    const method = RESET_METHODS[methodKey];
+    const row = "Attempt " + (n + 1) + " (" + baud + " baud, " + method.label + ")";
+    report("Arduino", row, "WAIT", "Trying…");
+    let rx = null;
+    const t0 = performance.now();
     try {
-      await port.open({ baudRate: baud });
-    } catch (e) {
-      report("Arduino", "Open port", "FAIL", errText(e) + ". Close other tabs or apps using the Arduino and try again.");
-      tile("board", "fail", "Port busy");
-      break;
-    }
-    report("Arduino", "Open port", "PASS", "Opened at " + baud + " baud.");
-    const rx = new SerialRx(port);
-    try {
-      await resetBoard(port);
-      report("Arduino", "Reset board", "PASS", "DTR/RTS reset signal sent.");
+      try {
+        await method.open(port, baud);
+      } catch (e) {
+        // A port that won't open at all is busy or gone; a reset-signal error is worth trying the next method.
+        if (!port.readable) { busy = true; throw new Error("could not open port (" + errText(e) + "). Close other tabs or apps using the Arduino."); }
+        throw new Error("reset failed: " + errText(e));
+      }
+      rx = new SerialRx(port);
       if (!(await stkSync(port, rx))) {
-        report("Arduino", "Bootloader", "WARN", "No reply at " + baud + " baud. Bytes seen: " + (rx.seen.length ? hex(rx.seen) : "none"));
+        report("Arduino", row, "WARN", "No reply after " + (performance.now() - t0).toFixed(0) + " ms. Bytes seen: " + (rx.seen.length ? hex(rx.seen) : "none"));
         continue;
       }
       const sig = await stkCommand(port, rx, [STK.READ_SIGN], 3);
@@ -541,19 +565,19 @@ async function testConnect() {
       await stkCommand(port, rx, [STK.LEAVE_PROG], 0).catch(() => {});
       const sigHex = hex(sig);
       const chip = sigHex === "1E 95 0F" ? "ATmega328P (Uno R3)" : sigHex === "1E 95 14" ? "ATmega328" : "unexpected chip";
-      report("Arduino", "Bootloader", "PASS", "Responded at " + baud + " baud, version " + major + "." + minor + ".");
+      report("Arduino", row, "PASS", "Bootloader version " + major + "." + minor + " answered in " + (performance.now() - t0).toFixed(0) + " ms.");
       report("Arduino", "Chip ID", chip.startsWith("unexpected") ? "WARN" : "PASS", sigHex + " = " + chip);
       tile("board", "pass", "Yes — " + chip.replace(" (Uno R3)", "") + " @ " + baud);
       found = true;
     } catch (e) {
-      report("Arduino", "Bootloader", "FAIL", errText(e) + ". Bytes seen: " + (rx.seen.length ? hex(rx.seen) : "none"));
+      report("Arduino", row, "FAIL", errText(e) + (rx && rx.seen.length ? ". Bytes seen: " + hex(rx.seen) : ""));
     } finally {
-      await rx.close();
+      if (rx) await rx.close();
       await port.close().catch(() => {});
     }
-    if (found) break;
   }
-  if (!found && tileState.board !== "Port busy") {
+  if (busy) tile("board", "fail", "Port busy");
+  else if (!found) {
     tile("board", "fail", "No reply");
     report("Arduino", "Hint", "INFO", "The port opened but the Arduino didn't answer. Check it's an Uno, try unplugging and replugging, and make sure the Serial Monitor in another tab is closed.");
   }

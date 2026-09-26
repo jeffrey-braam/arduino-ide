@@ -1,0 +1,141 @@
+:root {
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --text: #1d2330;
+  --muted: #5d6677;
+  --border: #d8dce3;
+  --accent: #00878f;
+  --accent-text: #ffffff;
+  --error: #c62828;
+  --success: #1a7f37;
+  --warn: #9a6700;
+  --console-bg: #ffffff;
+  --bottom-h: 240px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171a1f;
+    --panel: #1f232a;
+    --text: #e3e6eb;
+    --muted: #98a1b0;
+    --border: #2f353f;
+    --accent: #2bb3bb;
+    --accent-text: #0b1214;
+    --error: #ff7b72;
+    --success: #5fd07a;
+    --warn: #f0c24b;
+    --console-bg: #14161a;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+#app {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(80px, 1fr) 6px var(--bottom-h) auto;
+  /* Named areas so a hidden element (e.g. the banner) doesn't shift the others into wrong rows. */
+  grid-template-areas: "toolbar" "banner" "filebar" "editor" "splitter" "bottom" "status";
+}
+.toolbar { grid-area: toolbar; }
+#banner { grid-area: banner; }
+.filebar { grid-area: filebar; }
+#editor { grid-area: editor; }
+#splitter { grid-area: splitter; }
+#bottom { grid-area: bottom; }
+.statusbar { grid-area: status; }
+
+button, select, input { font: inherit; color: inherit; }
+button, select {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.toolbar .round {
+  width: 34px; height: 34px; padding: 0;
+  border-radius: 50%;
+  background: var(--accent); border-color: var(--accent); color: var(--accent-text);
+  font-size: 17px; font-weight: 700;
+}
+.sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+.spacer { flex: 1; }
+.field { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+
+.banner { margin: 0; padding: 8px 12px; background: #fff4d6; color: #5c4200; border-bottom: 1px solid var(--border); }
+.banner.error { background: #fdecea; color: #7a1a1a; }
+
+.filebar { padding: 4px 12px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--border); background: var(--panel); }
+.filebar .dirty::after { content: " ●"; color: var(--accent); }
+
+#editor { min-height: 0; overflow: hidden; background: var(--panel); }
+#editor .cm-editor { height: 100%; }
+#editor .cm-scroller { font-family: ui-monospace, "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace; font-size: 14px; }
+.cm-arduino { color: #00878f; }
+@media (prefers-color-scheme: dark) { .cm-arduino { color: #4fd1d9; } }
+
+#splitter { cursor: row-resize; background: var(--border); touch-action: none; }
+#splitter:hover, #splitter.dragging { background: var(--accent); }
+
+#bottom { display: flex; flex-direction: column; min-height: 0; background: var(--panel); }
+.tabs { display: flex; gap: 2px; padding: 4px 8px 0; border-bottom: 1px solid var(--border); }
+.tabs button { border: none; border-radius: 6px 6px 0 0; background: transparent; color: var(--muted); padding: 6px 12px; }
+.tabs button[aria-selected="true"] { background: var(--bg); color: var(--text); font-weight: 600; }
+.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.panel[hidden] { display: none; }
+
+.console {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 8px 12px;
+  overflow: auto;
+  background: var(--console-bg);
+  font: 13px/1.45 ui-monospace, "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.console .error { color: var(--error); }
+.console .success { color: var(--success); }
+.console .warn { color: var(--warn); }
+.console .muted { color: var(--muted); }
+
+.monitor-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.monitor-bar label { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+#mon-connect.connected { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.monitor-send { display: flex; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--border); }
+.monitor-send input { flex: 1; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 3px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+}
+.statusbar progress { width: 160px; height: 10px; }

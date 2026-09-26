@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arduino IDE</title>
+<style>/*INLINE_CSS*/</style>
+</head>
+<body>
+<noscript><p class="banner error">JavaScript is turned off, so the IDE can't run.</p></noscript>
+<div id="app">
+  <header class="toolbar">
+    <button id="btn-verify" class="round" title="Verify (Ctrl+R)" aria-label="Verify">&#10003;</button>
+    <button id="btn-upload" class="round" title="Upload (Ctrl+U)" aria-label="Upload">&#10132;</button>
+    <span class="sep"></span>
+    <button id="btn-new" title="New sketch">New</button>
+    <button id="btn-open" title="Open (Ctrl+O)">Open</button>
+    <button id="btn-save" title="Save (Ctrl+S)">Save</button>
+    <button id="btn-saveas" title="Save As (Ctrl+Shift+S)">Save As</button>
+    <span class="spacer"></span>
+    <label class="field">Board
+      <select id="board-select"></select>
+    </label>
+    <button id="btn-port" title="Choose which USB port the board is on">Select port</button>
+    <button id="btn-upload-hex" title="Upload an already-compiled .hex file">Upload .hex</button>
+  </header>
+  <div id="banner" class="banner" hidden></div>
+  <div class="filebar"><span id="sketch-name"></span></div>
+  <main id="editor"></main>
+  <div id="splitter" role="separator" aria-orientation="horizontal" title="Drag to resize"></div>
+  <section id="bottom">
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="output" aria-selected="true">Output</button>
+      <button role="tab" data-tab="monitor" aria-selected="false">Serial Monitor</button>
+    </nav>
+    <div id="panel-output" class="panel" role="tabpanel">
+      <pre id="output" class="console"></pre>
+    </div>
+    <div id="panel-monitor" class="panel" role="tabpanel" hidden>
+      <div class="monitor-bar">
+        <button id="mon-connect">Connect</button>
+        <select id="mon-baud" title="Baud rate"></select>
+        <select id="mon-ending" title="Line ending added when sending">
+          <option value="">No line ending</option>
+          <option value="\n">Newline</option>
+          <option value="\r">Carriage return</option>
+          <option value="\r\n">Both NL &amp; CR</option>
+        </select>
+        <label><input type="checkbox" id="mon-autoscroll" checked> Autoscroll</label>
+        <label><input type="checkbox" id="mon-timestamps"> Timestamps</label>
+        <span class="spacer"></span>
+        <button id="mon-clear">Clear</button>
+      </div>
+      <pre id="mon-out" class="console"></pre>
+      <form id="mon-form" class="monitor-send">
+        <input id="mon-input" placeholder="Message to send (Enter)" autocomplete="off">
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </section>
+  <footer class="statusbar">
+    <span id="status-text">Ready</span>
+    <progress id="progress" max="1" value="0" hidden></progress>
+    <span class="spacer"></span>
+    <span id="status-board"></span>
+    <span id="status-port"></span>
+    <span id="status-version"></span>
+  </footer>
+</div>
+<script>/*INLINE_JS*/</script>
+</body>
+</html>

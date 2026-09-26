@@ -33,6 +33,14 @@ test("compiles multi-tab sketches", { skip }, async () => {
   assert.ok(r.flash > 0);
 });
 
+test("uses the sketch's own copy of a header instead of the library", { skip }, async () => {
+  const main = { name: "Lcd.ino", code: '#include "LiquidCrystal.h"\nvoid setup() { lcdInit(); }\nvoid loop() {}\n' };
+  const header = { name: "LiquidCrystal.h", code: "void lcdInit();\n" };
+  const impl = { name: "LiquidCrystal.cpp", code: '#include "LiquidCrystal.h"\nvoid lcdInit() {}\n' };
+  const r = await tc.build({ files: [main, header, impl] });
+  assert.deepEqual(r.libraries, []);
+});
+
 test("reports errors at the student's line", { skip }, async () => {
   await assert.rejects(tc.build({ files: [sketch("HasError")] }), (e) => {
     assert.equal(e.message, "Compilation failed.");

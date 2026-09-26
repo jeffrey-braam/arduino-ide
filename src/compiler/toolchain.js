@@ -128,7 +128,11 @@ export class Toolchain {
     const cppTabs = rest.filter((f) => CPP.test(f.name));
     const names = new Set(files.map((f) => f.name));
     const { cpp } = preprocessSketch(inos);
-    const libs = this.resolveLibraries(files.flatMap((f) => findIncludes(f.code)));
+    // A header the sketch has its own copy of (a tab) is used instead of a library, as in the
+    // Arduino IDE, so that library isn't linked in.
+    const ownFiles = new Set(files.map((f) => f.name.toLowerCase()));
+    const includes = files.flatMap((f) => findIncludes(f.code)).filter((inc) => !ownFiles.has(inc.split("/").pop().toLowerCase()));
+    const libs = this.resolveLibraries(includes);
     if (libs.length) log("Using libraries: " + libs.map((l) => `${l.displayName} ${l.version}`).join(", "));
 
     const includeArgs = [

@@ -35,6 +35,7 @@ const LIBRARIES = [
   { name: "IRremote", where: "user" },
   { name: "PulseSensor_Playground", where: "user" },
   { name: "Encoder", where: "user" },
+  { name: "LiquidCrystal", where: "user" },
 ];
 
 const HEADER_EXT = /\.(h|hh|hpp|hxx|inc|tpp|ipp)$/i;

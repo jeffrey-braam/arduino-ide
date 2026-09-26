@@ -29,7 +29,7 @@ async function buildWorker() {
     write: false,
     logLevel: "error",
     // Emscripten glue references Node modules behind runtime checks that are false in a browser.
-    external: ["module", "fs", "path", "crypto", "url", "worker_threads", "child_process"],
+    external: ["node:*", "module", "fs", "path", "crypto", "url", "worker_threads", "child_process"],
     supported: { "top-level-await": true },
   });
   return r.outputFiles[0].text;

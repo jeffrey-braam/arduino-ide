@@ -65,6 +65,9 @@ export class Toolchain {
     const module = this.modules[tool];
     const mod = await this.factories[tool]({
       noInitialRun: true,
+      // ld finds its default linker scripts in <program dir>/ldscripts/, so give every tool a fixed
+      // location (otherwise Node uses the running script's path).
+      thisProgram: "/" + tool,
       print: (l) => stderr.push(l),
       printErr: (l) => stderr.push(l),
       instantiateWasm(imports, done) {
@@ -114,7 +117,7 @@ export class Toolchain {
    *   files[0] is the main .ino; other .ino tabs, .h and .cpp files may follow
    * @returns {Promise<{ hex: string, image: Uint8Array, flash: number, ram: number, libraries: string[], timings: object, warnings: object[] }>}
    */
-  async build({ files, log = () => {} }) {
+  async build({ files, log = () => {}, keepAssembly = false }) {
     await this.init();
     const t = { start: performance.now() };
     const [main, ...rest] = files;
@@ -140,6 +143,7 @@ export class Toolchain {
     // 1-2. Compile each translation unit to assembly, then assemble it.
     const units = [{ path: `/build/sketch/${main.name}.cpp`, data: enc.encode(cpp) }, ...cppTabs.map((f) => ({ path: "/build/sketch/" + f.name, data: enc.encode(f.code) }))];
     const objects = [];
+    const assembly = []; // kept only when asked for, to compare against the native compiler
     const diagnostics = [];
     const output = [];
     for (const [i, u] of units.entries()) {
@@ -158,6 +162,7 @@ export class Toolchain {
       output.push(...as.stderr);
       if (as.status !== 0 || !as.output) throw new CompileError("Assembling failed.", diagnostics, output.join("\n"));
       objects.push([`/build/unit${i}.o`, as.output]);
+      if (keepAssembly) assembly.push({ unit: base, text: new TextDecoder().decode(cc.output), source: new TextDecoder().decode(u.data) });
     }
     t.compile = t.assemble = performance.now();
     const warnings = diagnostics.filter((d) => d.severity === "warning");
@@ -194,6 +199,7 @@ export class Toolchain {
       libraries: libs.map((l) => l.name),
       warnings,
       output: output.join("\n"),
+      assembly,
       timings: {
         compileMs: Math.round(t.compile - t.start),
         linkMs: Math.round(t.link - t.compile),

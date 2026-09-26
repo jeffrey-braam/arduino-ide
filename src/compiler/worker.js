@@ -1,10 +1,10 @@
 // Compiler Web Worker: unpacks the embedded compiler data and runs builds off the main thread.
 import { readPack } from "./pack.js";
 import { Toolchain, CompileError } from "./toolchain.js";
-import createCc1plus from "../../node_modules/@horang-corp/avr-gcc-wasm/tools/cc1plus.mjs";
-import createAs from "../../node_modules/@horang-corp/avr-gcc-wasm/tools/avr-as.mjs";
-import createLd from "../../node_modules/@horang-corp/avr-gcc-wasm/tools/avr-ld.mjs";
-import createObjcopy from "../../node_modules/@horang-corp/avr-gcc-wasm/tools/avr-objcopy.mjs";
+import createCc1plus from "../../toolchain/out/cc1plus.mjs";
+import createAs from "../../toolchain/out/avr-as.mjs";
+import createLd from "../../toolchain/out/avr-ld.mjs";
+import createObjcopy from "../../toolchain/out/avr-objcopy.mjs";
 
 let toolchain = null;
 

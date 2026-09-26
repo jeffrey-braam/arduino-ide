@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arduino Chromebook Test</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #5d6677; --border: #dde1e8;
+    --pass: #1a7f37; --pass-bg: #e6f4ea; --warn: #9a6700; --warn-bg: #fff4d6;
+    --fail: #c62828; --fail-bg: #fdecea; --info: #3558b8; --info-bg: #e8eefc;
+    --pending: #6b7280; --pending-bg: #eef0f3; --accent: #00878f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c; --card: #1d2128; --text: #e6e9ee; --muted: #9aa3b2; --border: #2e343e;
+      --pass: #5fd07a; --pass-bg: #173022; --warn: #f0c24b; --warn-bg: #352b10;
+      --fail: #ff7b72; --fail-bg: #3a1a1a; --info: #8fb0ff; --info-bg: #1b2540;
+      --pending: #9aa3b2; --pending-bg: #262b33; --accent: #3cc4cc;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 0 0 10px; }
+  p { margin: 0 0 10px; }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+          padding: 16px; margin-top: 16px; }
+  ol { margin: 0; padding-left: 20px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+  .tile { border-radius: 8px; padding: 10px 12px; background: var(--pending-bg); }
+  .tile .label { font-size: 0.8rem; color: var(--muted); }
+  .tile .value { font-weight: 600; }
+  .tile.pass { background: var(--pass-bg); } .tile.pass .value { color: var(--pass); }
+  .tile.warn { background: var(--warn-bg); } .tile.warn .value { color: var(--warn); }
+  .tile.fail { background: var(--fail-bg); } .tile.fail .value { color: var(--fail); }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+           background: var(--card); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 6px 4px; border-top: 1px solid var(--border); vertical-align: top; }
+  td.name { width: 34%; font-weight: 500; }
+  td.status { width: 72px; }
+  .badge { display: inline-block; min-width: 56px; text-align: center; font-size: 0.75rem;
+           font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .badge.PASS { color: var(--pass); background: var(--pass-bg); }
+  .badge.WARN { color: var(--warn); background: var(--warn-bg); }
+  .badge.FAIL { color: var(--fail); background: var(--fail-bg); }
+  .badge.INFO { color: var(--info); background: var(--info-bg); }
+  .badge.WAIT { color: var(--pending); background: var(--pending-bg); }
+  td.detail { word-break: break-word; }
+  textarea { width: 100%; min-height: 160px; font: 12px/1.4 ui-monospace, Consolas, monospace;
+             background: var(--bg); color: var(--text); border: 1px solid var(--border);
+             border-radius: 8px; padding: 8px; }
+  pre.serial { max-height: 180px; overflow: auto; background: var(--bg); padding: 8px;
+               border-radius: 8px; font-size: 12px; white-space: pre-wrap; margin: 8px 0 0; }
+  @media (max-width: 560px) {
+    td.name { width: auto; }
+    tr { display: grid; grid-template-columns: 72px 1fr; }
+    td.name { grid-column: 2; grid-row: 1; border-top: 1px solid var(--border); }
+    td.status { grid-column: 1; grid-row: 1; }
+    td.detail { grid-column: 1 / -1; border-top: none; padding-top: 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Arduino Chromebook Test</h1>
+  <p class="muted">Checks whether this Chromebook can run the offline Arduino IDE. Nothing here uses the internet.</p>
+
+  <noscript><div class="card"><strong>JavaScript is turned off or blocked.</strong> The IDE cannot run on this device as it is set up now.</div></noscript>
+
+  <div class="card">
+    <h2>Steps</h2>
+    <ol>
+      <li>Plug the Arduino Uno into the Chromebook with a USB cable.</li>
+      <li>Wait for the automatic checks below to finish.</li>
+      <li>Click <strong>Connect to Arduino</strong> and pick the Arduino from the list.</li>
+      <li>Try the other buttons if you have time. The memory test can take up to 30 seconds.</li>
+      <li>Click <strong>Copy results</strong> and send them to your teacher.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Summary</h2>
+    <div class="tiles">
+      <div class="tile pass" id="tile-file"><div class="label">Page runs</div><div class="value">Yes</div></div>
+      <div class="tile" id="tile-serial"><div class="label">USB serial (Web Serial)</div><div class="value">Checking…</div></div>
+      <div class="tile" id="tile-board"><div class="label">Arduino responds</div><div class="value">Not tested yet</div></div>
+      <div class="tile" id="tile-compiler"><div class="label">Compiler support</div><div class="value">Checking…</div></div>
+      <div class="tile" id="tile-storage"><div class="label">Save work</div><div class="value">Checking…</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Tests you run</h2>
+    <div class="buttons">
+      <button class="primary" id="btn-connect">Connect to Arduino</button>
+      <button id="btn-listen">Listen to serial (5 s)</button>
+      <button id="btn-save">Test saving a file</button>
+      <button id="btn-memory">Memory test (1 GB)</button>
+    </div>
+    <pre class="serial" id="serial-out" hidden></pre>
+  </div>
+
+  <div class="card">
+    <h2>Details</h2>
+    <table><tbody id="rows"></tbody></table>
+  </div>
+
+  <div class="card">
+    <h2>Results</h2>
+    <div class="buttons" style="margin-bottom:8px">
+      <button class="primary" id="btn-copy">Copy results</button>
+      <span class="muted" id="copy-status"></span>
+    </div>
+    <textarea id="results" readonly></textarea>
+  </div>
+</main>
+
+<script>
+"use strict";
+const PROBE_VERSION = 1;
+
+// ---------- Reporting ----------
+const rowsEl = document.getElementById("rows");
+const rows = new Map();
+
+function report(group, name, status, detail) {
+  const key = group + "/" + name;
+  let row = rows.get(key);
+  if (!row) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td class="status"><span class="badge"></span></td><td class="name"></td><td class="detail"></td>';
+    tr.querySelector(".name").textContent = group + ": " + name;
+    rowsEl.appendChild(tr);
+    row = { tr, group, name };
+    rows.set(key, row);
+  }
+  row.status = status;
+  row.detail = detail || "";
+  const badge = row.tr.querySelector(".badge");
+  badge.className = "badge " + status;
+  badge.textContent = status === "WAIT" ? "…" : status;
+  row.tr.querySelector(".detail").textContent = row.detail;
+  updateResultsText();
+}
+
+function tile(id, cls, text) {
+  const el = document.getElementById("tile-" + id);
+  el.className = "tile " + cls;
+  el.querySelector(".value").textContent = text;
+  tileState[id] = text;
+  updateResultsText();
+}
+const tileState = { file: "Yes", serial: "Checking…", board: "Not tested yet", compiler: "Checking…", storage: "Checking…" };
+
+function updateResultsText() {
+  const lines = [
+    "Arduino Chromebook Test v" + PROBE_VERSION,
+    "Date: " + new Date().toString(),
+    "",
+    "SUMMARY",
+    "  Page runs: " + tileState.file,
+    "  USB serial: " + tileState.serial,
+    "  Arduino responds: " + tileState.board,
+    "  Compiler support: " + tileState.compiler,
+    "  Save work: " + tileState.storage,
+    "",
+    "DETAILS",
+  ];
+  for (const r of rows.values()) lines.push("  [" + r.status + "] " + r.group + ": " + r.name + " - " + r.detail);
+  document.getElementById("results").value = lines.join("\n");
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const hex = (arr) => Array.from(arr, (b) => b.toString(16).padStart(2, "0").toUpperCase()).join(" ");
+function errText(e) { return e ? (e.name ? e.name + ": " : "") + (e.message || String(e)) : "unknown error"; }
+function withTimeout(promise, ms, what) {
+  return Promise.race([promise, sleep(ms).then(() => { throw new Error(what + " timed out after " + ms + " ms"); })]);
+}
+
+// ---------- Environment ----------
+function checkEnvironment() {
+  const ua = navigator.userAgent;
+  const chrome = (ua.match(/Chrome\/(\d+)/) || [])[1];
+  const isCrOS = /CrOS/.test(ua);
+  report("Device", "Browser", "INFO", (isCrOS ? "ChromeOS" : navigator.platform) + ", Chrome " + (chrome || "not detected") + " | " + ua);
+  if (!chrome) report("Device", "Chrome version", "WARN", "This does not look like Chrome. Web Serial only works in Chrome/Edge.");
+  else if (+chrome < 89) report("Device", "Chrome version", "FAIL", "Chrome " + chrome + " is too old; Web Serial needs 89 or newer.");
+  else report("Device", "Chrome version", "PASS", "Chrome " + chrome);
+
+  const proto = location.protocol;
+  if (proto === "file:") report("Device", "Opened as", "PASS", "Local file (" + location.pathname + ")");
+  else report("Device", "Opened as", "INFO", proto + "//" + location.host + " (not a local file)");
+
+  report("Device", "Secure context", window.isSecureContext ? "PASS" : "FAIL",
+    window.isSecureContext ? "Yes" : "No. USB serial and file saving are disabled in insecure pages.");
+
+  const mem = navigator.deviceMemory;
+  report("Device", "Memory / CPU", mem && mem < 4 ? "WARN" : "INFO",
+    (mem ? "~" + mem + " GB RAM" : "RAM unknown") + ", " + (navigator.hardwareConcurrency || "?") + " CPU threads" +
+    (mem && mem < 4 ? ". Low memory may make compiling slow or fail." : ""));
+  report("Device", "Network", "INFO", navigator.onLine ? "Online (not needed)" : "Offline");
+
+  const prev = safeGet("probe_mem_progress");
+  if (prev) report("Memory", "Previous memory test", "WARN",
+    "An earlier memory test stopped at " + prev + " MB, probably because the tab crashed.");
+}
+
+function safeGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function safeSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+function safeDel(k) { try { localStorage.removeItem(k); } catch {} }
+
+// ---------- Web Serial availability ----------
+const USB_IDS = {
+  "2341": "Arduino (genuine)", "2a03": "Arduino.org (genuine)", "1a86": "WCH CH340 (common on clones)",
+  "0403": "FTDI", "10c4": "Silicon Labs CP210x", "067b": "Prolific PL2303",
+};
+function describePort(port) {
+  const info = port.getInfo();
+  if (info.usbVendorId === undefined) return "non-USB serial port";
+  const vid = info.usbVendorId.toString(16).padStart(4, "0");
+  const pid = (info.usbProductId || 0).toString(16).padStart(4, "0");
+  return (USB_IDS[vid] || "unknown vendor") + " (USB " + vid + ":" + pid + ")";
+}
+
+async function checkSerialApi() {
+  if (!("serial" in navigator)) {
+    report("USB serial", "Web Serial API", "FAIL", "navigator.serial is missing. The browser is too old or an admin policy removed it.");
+    tile("serial", "fail", "Not available");
+    return;
+  }
+  report("USB serial", "Web Serial API", "PASS", "navigator.serial is present.");
+  const fp = document.featurePolicy || document.permissionsPolicy;
+  if (fp && fp.allowsFeature) {
+    const ok = fp.allowsFeature("serial");
+    report("USB serial", "Permissions policy", ok ? "PASS" : "FAIL", ok ? "Page is allowed to use serial." : "Serial is blocked by permissions policy.");
+    if (!ok) { tile("serial", "fail", "Blocked by policy"); return; }
+  }
+  try {
+    const ports = await withTimeout(navigator.serial.getPorts(), 3000, "getPorts");
+    report("USB serial", "Already-allowed ports", "INFO", ports.length ? ports.map(describePort).join("; ") : "None yet (normal on first run).");
+  } catch (e) {
+    report("USB serial", "Already-allowed ports", "WARN", errText(e));
+  }
+  report("USB serial", "WebUSB API", "INFO", "usb" in navigator ? "Present" : "Missing");
+  tile("serial", "pass", "Available — now click Connect");
+}
+
+// ---------- Compiler prerequisites ----------
+// Minimal module: (func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add)
+const ADD_WASM = new Uint8Array([
+  0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
+  0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f,
+  0x03, 0x02, 0x01, 0x00,
+  0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00,
+  0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b,
+]);
+
+function makeWorker(src) {
+  const url = URL.createObjectURL(new Blob([src], { type: "text/javascript" }));
+  const w = new Worker(url);
+  URL.revokeObjectURL(url);
+  return w;
+}
+
+async function checkCompilerPrereqs() {
+  let ok = true;
+
+  // WebAssembly on the main thread
+  try {
+    const { instance } = await WebAssembly.instantiate(ADD_WASM);
+    const sum = instance.exports.add(2, 3);
+    if (sum !== 5) throw new Error("add(2,3) returned " + sum);
+    report("Compiler", "WebAssembly", "PASS", "Runs on the page.");
+  } catch (e) {
+    ok = false;
+    report("Compiler", "WebAssembly", "FAIL", errText(e));
+  }
+
+  // WebAssembly inside a Blob worker (the compiler will run in one)
+  try {
+    const w = makeWorker(`onmessage = async (e) => {
+      try { const { instance } = await WebAssembly.instantiate(e.data);
+            postMessage({ ok: true, sum: instance.exports.add(20, 22) }); }
+      catch (err) { postMessage({ ok: false, error: String(err) }); } };`);
+    const res = await withTimeout(new Promise((resolve, reject) => {
+      w.onmessage = (e) => resolve(e.data);
+      w.onerror = (e) => reject(new Error(e.message || "worker error"));
+      w.postMessage(ADD_WASM);
+    }), 5000, "Worker");
+    w.terminate();
+    if (!res.ok || res.sum !== 42) throw new Error(res.error || "wrong result " + res.sum);
+    report("Compiler", "Background worker + WebAssembly", "PASS", "Blob workers can run WebAssembly.");
+  } catch (e) {
+    ok = false;
+    report("Compiler", "Background worker + WebAssembly", "FAIL", errText(e));
+  }
+
+  report("Compiler", "Shared memory (threads)", "INFO",
+    "SharedArrayBuffer " + (typeof SharedArrayBuffer === "function" ? "exists" : "missing") +
+    ", crossOriginIsolated=" + String(self.crossOriginIsolated) + ". The compiler must be built without threads if this is false.");
+
+  // gzip decompression (lets the embedded compiler be stored compressed)
+  try {
+    const input = new TextEncoder().encode("void setup() {}\n".repeat(2000));
+    const comp = new Uint8Array(await new Response(new Blob([input]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
+    const out = new Uint8Array(await new Response(new Blob([comp]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+    if (out.length !== input.length || out.some((b, i) => b !== input[i])) throw new Error("round trip mismatch");
+    report("Compiler", "Gzip decompression", "PASS", input.length + " → " + comp.length + " bytes and back.");
+  } catch (e) {
+    ok = false;
+    report("Compiler", "Gzip decompression", "FAIL", errText(e));
+  }
+
+  // Decoding large embedded data (base64) — estimates IDE load time
+  try {
+    const size = 8 * 1024 * 1024;
+    const raw = new Uint8Array(size);
+    for (let i = 0; i < size; i += 65536) crypto.getRandomValues(raw.subarray(i, i + 65536));
+    let b64 = "";
+    const chunk = 3 * 10000; // multiple of 3 so no padding appears mid-string
+    for (let i = 0; i < size; i += chunk) b64 += btoa(String.fromCharCode.apply(null, raw.subarray(i, i + chunk)));
+    const t0 = performance.now();
+    let decoded, method;
+    if (typeof Uint8Array.fromBase64 === "function") {
+      decoded = Uint8Array.fromBase64(b64);
+      method = "Uint8Array.fromBase64";
+    } else {
+      const bin = atob(b64);
+      decoded = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) decoded[i] = bin.charCodeAt(i);
+      method = "atob";
+    }
+    const t1 = performance.now();
+    if (decoded.length !== size || decoded.some((b, i) => b !== raw[i])) throw new Error("decoded data mismatch");
+    const ms = t1 - t0;
+    report("Compiler", "Embedded data decode", ms > 2000 ? "WARN" : "PASS",
+      "8 MB decoded in " + ms.toFixed(0) + " ms via " + method + " (~" + (8000 / ms).toFixed(0) + " MB/s).");
+  } catch (e) {
+    report("Compiler", "Embedded data decode", "WARN", errText(e));
+  }
+
+  tile("compiler", ok ? "pass" : "fail", ok ? "Supported" : "Missing features");
+}
+
+// ---------- Storage ----------
+async function checkStorage() {
+  let local = false, idb = false;
+  try {
+    localStorage.setItem("probe_ls", "ok");
+    local = localStorage.getItem("probe_ls") === "ok";
+    localStorage.removeItem("probe_ls");
+    report("Storage", "localStorage", local ? "PASS" : "FAIL", local ? "Works." : "Value did not read back.");
+  } catch (e) {
+    report("Storage", "localStorage", "FAIL", errText(e));
+  }
+
+  try {
+    await withTimeout(new Promise((resolve, reject) => {
+      const req = indexedDB.open("probe_db", 1);
+      req.onupgradeneeded = () => req.result.createObjectStore("s");
+      req.onerror = () => reject(req.error);
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction("s", "readwrite");
+        tx.objectStore("s").put(new Uint8Array(1024 * 1024), "blob");
+        tx.oncomplete = () => {
+          const get = db.transaction("s").objectStore("s").get("blob");
+          get.onsuccess = () => {
+            db.close();
+            indexedDB.deleteDatabase("probe_db");
+            get.result && get.result.length === 1024 * 1024 ? resolve() : reject(new Error("read back failed"));
+          };
+          get.onerror = () => reject(get.error);
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+    }), 5000, "IndexedDB");
+    idb = true;
+    report("Storage", "IndexedDB", "PASS", "Stored and read back 1 MB.");
+  } catch (e) {
+    report("Storage", "IndexedDB", "FAIL", errText(e));
+  }
+
+  if (navigator.storage && navigator.storage.estimate) {
+    try {
+      const est = await navigator.storage.estimate();
+      report("Storage", "Quota", "INFO", ((est.quota || 0) / 1048576).toFixed(0) + " MB available to this page.");
+    } catch (e) {
+      report("Storage", "Quota", "INFO", errText(e));
+    }
+  }
+
+  const fsa = "showSaveFilePicker" in window && "showOpenFilePicker" in window;
+  report("Storage", "File open/save dialogs", fsa ? "PASS" : "WARN",
+    fsa ? "Available — click “Test saving a file” to confirm." : "Not available; the IDE would fall back to downloads.");
+
+  tile("storage", local || idb ? "pass" : "fail", local || idb ? "Autosave works" : "Cannot store work");
+}
+
+// ---------- Serial helpers ----------
+class SerialRx {
+  constructor(port) {
+    this.buf = [];
+    this.seen = [];
+    this.waiters = [];
+    this.reader = port.readable.getReader();
+    this.done = this.loop();
+  }
+  async loop() {
+    try {
+      for (;;) {
+        const { value, done } = await this.reader.read();
+        if (done) break;
+        if (value) {
+          for (const b of value) { this.buf.push(b); if (this.seen.length < 64) this.seen.push(b); }
+          const w = this.waiters; this.waiters = []; w.forEach((f) => f());
+        }
+      }
+    } catch (e) {
+      this.error = e;
+    } finally {
+      this.reader.releaseLock();
+    }
+  }
+  clear() { this.buf.length = 0; }
+  async read(n, timeoutMs) {
+    const deadline = performance.now() + timeoutMs;
+    while (this.buf.length < n) {
+      const left = deadline - performance.now();
+      if (left <= 0) return null;
+      await new Promise((res) => {
+        const t = setTimeout(res, left);
+        this.waiters.push(() => { clearTimeout(t); res(); });
+      });
+    }
+    return this.buf.splice(0, n);
+  }
+  async close() {
+    try { await this.reader.cancel(); } catch {}
+    await this.done;
+  }
+}
+
+async function send(port, bytes) {
+  const w = port.writable.getWriter();
+  try { await w.write(new Uint8Array(bytes)); } finally { w.releaseLock(); }
+}
+
+// STK500v1 constants (Optiboot bootloader on the Uno)
+const STK = { OK: 0x10, INSYNC: 0x14, CRC_EOP: 0x20, GET_SYNC: 0x30, GET_PARAM: 0x41, LEAVE_PROG: 0x51, READ_SIGN: 0x75 };
+
+async function stkCommand(port, rx, bytes, respLen) {
+  rx.clear();
+  await send(port, [...bytes, STK.CRC_EOP]);
+  const r = await rx.read(respLen + 2, 500);
+  if (!r) throw new Error("no reply to command 0x" + hex([bytes[0]]));
+  if (r[0] !== STK.INSYNC || r[r.length - 1] !== STK.OK) throw new Error("bad reply " + hex(r));
+  return r.slice(1, -1);
+}
+
+async function stkSync(port, rx) {
+  for (let i = 0; i < 8; i++) {
+    rx.clear();
+    await send(port, [STK.GET_SYNC, STK.CRC_EOP]);
+    const r = await rx.read(2, 150);
+    if (r && r[0] === STK.INSYNC && r[1] === STK.OK) {
+      await sleep(20);
+      rx.clear();
+      await send(port, [STK.GET_SYNC, STK.CRC_EOP]);
+      const r2 = await rx.read(2, 250);
+      if (r2 && r2[0] === STK.INSYNC && r2[1] === STK.OK) return true;
+    }
+  }
+  return false;
+}
+
+async function resetBoard(port) {
+  // Same sequence avrdude uses: drop DTR/RTS, then raise them to pulse the Uno's reset line.
+  await port.setSignals({ dataTerminalReady: false, requestToSend: false });
+  await sleep(250);
+  await port.setSignals({ dataTerminalReady: true, requestToSend: true });
+  await sleep(50);
+}
+
+function serialRequestError(e) {
+  if (e && e.name === "NotFoundError")
+    return ["WARN", "No port was chosen. If no chooser window appeared at all, Web Serial is probably blocked by an admin policy. " +
+      "If it appeared but the Arduino wasn't listed, try another USB cable (some only charge) or another USB port."];
+  if (e && e.name === "SecurityError")
+    return ["FAIL", "Blocked by security policy: " + e.message];
+  return ["FAIL", errText(e)];
+}
+
+// ---------- Tests run by the student ----------
+async function testConnect() {
+  const btn = document.getElementById("btn-connect");
+  btn.disabled = true;
+  report("Arduino", "Choose port", "WAIT", "Waiting for you to pick a port…");
+  let port;
+  try {
+    port = await navigator.serial.requestPort();
+  } catch (e) {
+    const [st, msg] = serialRequestError(e);
+    report("Arduino", "Choose port", st, msg);
+    tile("board", st === "FAIL" ? "fail" : "warn", st === "FAIL" ? "Blocked" : "No port chosen");
+    btn.disabled = false;
+    return;
+  }
+  report("Arduino", "Choose port", "PASS", "Picked " + describePort(port));
+
+  let found = false;
+  for (const baud of [115200, 57600]) {
+    report("Arduino", "Bootloader", "WAIT", "Trying " + baud + " baud…");
+    try {
+      await port.open({ baudRate: baud });
+    } catch (e) {
+      report("Arduino", "Open port", "FAIL", errText(e) + ". Close other tabs or apps using the Arduino and try again.");
+      tile("board", "fail", "Port busy");
+      break;
+    }
+    report("Arduino", "Open port", "PASS", "Opened at " + baud + " baud.");
+    const rx = new SerialRx(port);
+    try {
+      await resetBoard(port);
+      report("Arduino", "Reset board", "PASS", "DTR/RTS reset signal sent.");
+      if (!(await stkSync(port, rx))) {
+        report("Arduino", "Bootloader", "WARN", "No reply at " + baud + " baud. Bytes seen: " + (rx.seen.length ? hex(rx.seen) : "none"));
+        continue;
+      }
+      const sig = await stkCommand(port, rx, [STK.READ_SIGN], 3);
+      const major = (await stkCommand(port, rx, [STK.GET_PARAM, 0x81], 1))[0];
+      const minor = (await stkCommand(port, rx, [STK.GET_PARAM, 0x82], 1))[0];
+      await stkCommand(port, rx, [STK.LEAVE_PROG], 0).catch(() => {});
+      const sigHex = hex(sig);
+      const chip = sigHex === "1E 95 0F" ? "ATmega328P (Uno R3)" : sigHex === "1E 95 14" ? "ATmega328" : "unexpected chip";
+      report("Arduino", "Bootloader", "PASS", "Responded at " + baud + " baud, version " + major + "." + minor + ".");
+      report("Arduino", "Chip ID", chip.startsWith("unexpected") ? "WARN" : "PASS", sigHex + " = " + chip);
+      tile("board", "pass", "Yes — " + chip.replace(" (Uno R3)", "") + " @ " + baud);
+      found = true;
+    } catch (e) {
+      report("Arduino", "Bootloader", "FAIL", errText(e) + ". Bytes seen: " + (rx.seen.length ? hex(rx.seen) : "none"));
+    } finally {
+      await rx.close();
+      await port.close().catch(() => {});
+    }
+    if (found) break;
+  }
+  if (!found && tileState.board !== "Port busy") {
+    tile("board", "fail", "No reply");
+    report("Arduino", "Hint", "INFO", "The port opened but the Arduino didn't answer. Check it's an Uno, try unplugging and replugging, and make sure the Serial Monitor in another tab is closed.");
+  }
+  btn.disabled = false;
+}
+
+async function testListen() {
+  const btn = document.getElementById("btn-listen");
+  const out = document.getElementById("serial-out");
+  btn.disabled = true;
+  let port;
+  try {
+    const ports = await navigator.serial.getPorts();
+    port = ports.length === 1 ? ports[0] : await navigator.serial.requestPort();
+  } catch (e) {
+    const [st, msg] = serialRequestError(e);
+    report("Serial monitor", "Listen at 9600", st, msg);
+    btn.disabled = false;
+    return;
+  }
+  try {
+    await port.open({ baudRate: 9600 });
+  } catch (e) {
+    report("Serial monitor", "Listen at 9600", "FAIL", errText(e));
+    btn.disabled = false;
+    return;
+  }
+  report("Serial monitor", "Listen at 9600", "WAIT", "Listening for 5 seconds…");
+  out.hidden = false;
+  out.textContent = "";
+  const rx = new SerialRx(port);
+  const decoder = new TextDecoder();
+  let total = 0;
+  const end = performance.now() + 5000;
+  while (performance.now() < end) {
+    await sleep(100);
+    if (rx.buf.length) {
+      const chunk = rx.buf.splice(0);
+      total += chunk.length;
+      out.textContent += decoder.decode(new Uint8Array(chunk), { stream: true });
+      out.scrollTop = out.scrollHeight;
+    }
+  }
+  await rx.close();
+  await port.close().catch(() => {});
+  if (total) report("Serial monitor", "Listen at 9600", "PASS", "Received " + total + " bytes.");
+  else report("Serial monitor", "Listen at 9600", "INFO", "Opened fine but received nothing. That's normal if the sketch on the board doesn't use Serial.print at 9600.");
+  btn.disabled = false;
+}
+
+async function testSave() {
+  const text = "// Chromebook save test\nvoid setup() {}\nvoid loop() {}\n";
+  if (!("showSaveFilePicker" in window)) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    a.download = "probe_test.ino";
+    a.click();
+    report("Storage", "Save file", "WARN", "No save dialog available; tried a plain download instead. Check your Downloads folder.");
+    return;
+  }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: "probe_test.ino",
+      types: [{ description: "Arduino sketch", accept: { "text/plain": [".ino"] } }],
+    });
+    const w = await handle.createWritable();
+    await w.write(text);
+    await w.close();
+    const back = await (await handle.getFile()).text();
+    report("Storage", "Save file", back === text ? "PASS" : "WARN",
+      back === text ? "Saved “" + handle.name + "” and read it back." : "Saved but it read back differently.");
+  } catch (e) {
+    if (e && e.name === "AbortError") report("Storage", "Save file", "INFO", "Save dialog was cancelled.");
+    else report("Storage", "Save file", "FAIL", errText(e));
+  }
+}
+
+function testMemory() {
+  const btn = document.getElementById("btn-memory");
+  btn.disabled = true;
+  report("Memory", "1 GB WebAssembly test", "WAIT", "Starting…");
+  const w = makeWorker(`onmessage = (e) => {
+    const target = e.data, step = 64;
+    let mem;
+    try { mem = new WebAssembly.Memory({ initial: 1, maximum: target * 16 + 1 }); }
+    catch (err) { postMessage({ done: true, mb: 0, error: String(err) }); return; }
+    let mb = 0;
+    while (mb < target) {
+      try { mem.grow(step * 16); } catch (err) { postMessage({ done: true, mb, error: String(err) }); return; }
+      const view = new Uint8Array(mem.buffer);
+      for (let i = mb * 1048576 + 65536; i < (mb + step) * 1048576 + 65536; i += 4096) view[i] = 1;
+      mb += step;
+      postMessage({ progress: mb });
+    }
+    postMessage({ done: true, mb });
+  };`);
+  const t0 = performance.now();
+  w.onmessage = (e) => {
+    const d = e.data;
+    if (d.progress) {
+      safeSet("probe_mem_progress", String(d.progress));
+      report("Memory", "1 GB WebAssembly test", "WAIT", "Allocated " + d.progress + " MB…");
+      return;
+    }
+    w.terminate();
+    safeDel("probe_mem_progress");
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    if (d.error) report("Memory", "1 GB WebAssembly test", d.mb >= 512 ? "WARN" : "FAIL", "Stopped at " + d.mb + " MB after " + secs + " s: " + d.error);
+    else report("Memory", "1 GB WebAssembly test", "PASS", "Allocated and used " + d.mb + " MB in " + secs + " s.");
+    btn.disabled = false;
+  };
+  w.onerror = (e) => {
+    w.terminate();
+    report("Memory", "1 GB WebAssembly test", "FAIL", e.message || "worker crashed");
+    btn.disabled = false;
+  };
+  w.postMessage(1024);
+}
+
+async function copyResults() {
+  const ta = document.getElementById("results");
+  const status = document.getElementById("copy-status");
+  try {
+    await navigator.clipboard.writeText(ta.value);
+    status.textContent = "Copied!";
+  } catch {
+    ta.focus();
+    ta.select();
+    status.textContent = document.execCommand("copy") ? "Copied!" : "Select the text below and copy it with Ctrl+C.";
+  }
+}
+
+// ---------- Wire up ----------
+document.getElementById("btn-connect").onclick = testConnect;
+document.getElementById("btn-listen").onclick = testListen;
+document.getElementById("btn-save").onclick = testSave;
+document.getElementById("btn-memory").onclick = testMemory;
+document.getElementById("btn-copy").onclick = copyResults;
+
+if (!("serial" in navigator)) {
+  document.getElementById("btn-connect").disabled = true;
+  document.getElementById("btn-listen").disabled = true;
+}
+
+(async () => {
+  checkEnvironment();
+  await checkSerialApi();
+  await checkStorage();
+  await checkCompilerPrereqs();
+})().catch((e) => report("Page", "Unexpected error", "FAIL", errText(e)));
+</script>
+</body>
+</html>

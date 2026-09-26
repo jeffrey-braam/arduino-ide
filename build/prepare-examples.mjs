@@ -87,7 +87,8 @@ function orderFiles(files, sketchName) {
   return [main, ...files.filter((f) => f !== main).sort((a, b) => a.name.localeCompare(b.name))];
 }
 
-function libraryExamples(dir) {
+// Sketch folders under dir/<sub> (a library's examples/, or a folder of our own examples).
+function libraryExamples(dir, sub = "examples") {
   const out = [];
   const walk = (d, rel) => {
     if (!fs.existsSync(d)) return;
@@ -105,7 +106,7 @@ function libraryExamples(dir) {
       } else walk(p, r);
     }
   };
-  walk(path.join(dir, "examples"), "");
+  walk(path.join(dir, sub), "");
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -202,6 +203,11 @@ for (const categoryDir of [...new Set(allBuiltin.map((e) => e.categoryDir))]) {
   if (examples.length) builtin.push({ category: inCat[0].category, examples });
 }
 
+console.log("Sensor kit examples");
+// Starter sketches for the classroom's 37-in-1 KY sensor kit, kept in this repository.
+const kitExamples = libraryExamples(path.join(root, "examples"), "SensorKit");
+const kit = kitExamples.length ? [{ category: "37-in-1 Sensor Kit", examples: await keepCompiling(kitExamples, "Sensor Kit") }] : [];
+
 console.log("Library examples");
 const libraries = [];
 for (const lib of tc.manifest.libraries) {
@@ -225,6 +231,7 @@ for (const lib of tc.manifest.libraries) {
 const data = {
   createdAt: new Date().toISOString(),
   builtinSource: `arduino/arduino-examples ${EXAMPLES_TAG} (CC0-1.0)`,
+  kit,
   builtin,
   libraries,
 };

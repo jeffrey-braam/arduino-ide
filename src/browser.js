@@ -75,8 +75,13 @@ export function setupBrowser({ onOpenExample, onInclude }) {
     };
 
     list.replaceChildren();
+    const kit = data.kit || [];
+    if (kit.length) {
+      list.append(el("h3", { className: "list-heading", textContent: "Sensor kit" }));
+      for (const c of kit) list.append(addGroup(c.category, c.examples, `Sensor kit · ${c.category}`, true));
+    }
     list.append(el("h3", { className: "list-heading", textContent: "Built-in examples" }));
-    data.builtin.forEach((c, i) => list.append(addGroup(c.category, c.examples, `Built-in · ${c.category}`, i === 0)));
+    data.builtin.forEach((c, i) => list.append(addGroup(c.category, c.examples, `Built-in · ${c.category}`, !kit.length && i === 0)));
     list.append(el("h3", { className: "list-heading", textContent: "Library examples" }));
     for (const lib of data.libraries.filter((l) => l.examples.length))
       list.append(addGroup(lib.displayName, lib.examples, `${lib.displayName} library`, false));

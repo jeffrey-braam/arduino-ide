@@ -23,6 +23,7 @@ export class SerialMonitor extends EventTarget {
     this.loop = null;
     this.pending = "";
     this.atLineStart = true;
+    this.partialLine = ""; // incomplete last line, for "line" events
     this.flushQueued = false;
     this.encoder = new TextEncoder();
   }
@@ -43,6 +44,7 @@ export class SerialMonitor extends EventTarget {
     }
     this.port = port;
     this.decoder = new TextDecoder();
+    this.partialLine = "";
     this.loop = this.#readLoop();
     this.#emit("state");
   }
@@ -124,6 +126,7 @@ export class SerialMonitor extends EventTarget {
 
   #append(chunk) {
     chunk = chunk.replace(/\r/g, ""); // println sends \r\n; the \r would show as a stray space
+    this.#emitLines(chunk);
     if (this.settings.timestamps) {
       let out = "";
       for (const ch of chunk) {
@@ -148,6 +151,18 @@ export class SerialMonitor extends EventTarget {
     this.pending = "";
     if (this.text.length > MAX_CHARS) this.text.deleteData(0, this.text.length - TRIM_TO);
     if (this.settings.autoscroll) this.out.scrollTop = this.out.scrollHeight;
+  }
+
+  // Fires a "line" event per complete line received (used by the Serial Plotter).
+  #emitLines(chunk) {
+    const parts = (this.partialLine + chunk).split("\n");
+    this.partialLine = parts.pop();
+    if (this.partialLine.length > 4096) this.partialLine = ""; // no newline in sight: not line data
+    for (const line of parts) {
+      const e = new Event("line");
+      e.line = line;
+      this.dispatchEvent(e);
+    }
   }
 
   #emit(type, message) {

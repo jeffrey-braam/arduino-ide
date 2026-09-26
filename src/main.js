@@ -9,6 +9,7 @@ import * as storage from "./storage.js";
 import * as files from "./files.js";
 import { compilerAvailable, compile, startCompiler } from "./compiler.js";
 import { browserAvailable, setupBrowser } from "./browser.js";
+import { SerialPlotter } from "./plotter.js";
 import { makeSketch, newSketch, isDirty, markSaved, toStorage, fromStorage, validateTabName, orderOpenedFiles, baseName } from "./sketch.js";
 
 const $ = (id) => document.getElementById(id);
@@ -17,13 +18,17 @@ const $ = (id) => document.getElementById(id);
 const settings = storage.loadSettings({
   board: DEFAULT_BOARD,
   baud: 9600,
-  lineEnding: "\n",
+  lineEnding: "nl", // key of LINE_ENDINGS
   autoscroll: true,
   timestamps: false,
   bottomHeight: 240,
   tab: "output",
 });
 if (!BOARDS[settings.board]) settings.board = DEFAULT_BOARD;
+// Serial Monitor line endings. Earlier versions stored the characters themselves; convert those.
+const LINE_ENDINGS = { none: "", nl: "\n", cr: "\r", both: "\r\n" };
+if (!(settings.lineEnding in LINE_ENDINGS))
+  settings.lineEnding = Object.keys(LINE_ENDINGS).find((k) => LINE_ENDINGS[k] === settings.lineEnding) ?? "nl";
 const persistSettings = () => storage.saveSettings(settings);
 
 let sketch = fromStorage(storage.loadSketch()) ?? newSketch();
@@ -35,6 +40,8 @@ let busy = false;
 const log = new OutputLog($("output"));
 const ports = new PortManager();
 const monitor = new SerialMonitor(ports, { out: $("mon-out"), settings });
+const plotter = new SerialPlotter($("plot-canvas"), $("plot-legend"));
+monitor.addEventListener("line", (e) => plotter.addLine(e.line));
 
 // ---------- Editor, tabs & autosave ----------
 let autosaveTimer = 0;
@@ -140,7 +147,10 @@ function setProgress(fraction) {
 function showTab(name) {
   for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
   $("panel-output").hidden = name !== "output";
-  $("panel-monitor").hidden = name !== "monitor";
+  // The Serial Plotter is the Serial Monitor panel (same connection and controls) in plot mode.
+  $("panel-monitor").hidden = name !== "monitor" && name !== "plotter";
+  $("panel-monitor").classList.toggle("plot-mode", name === "plotter");
+  if (name === "plotter") plotter.draw();
   settings.tab = name;
   persistSettings();
 }
@@ -415,7 +425,14 @@ function setupMonitorUi() {
     if (monitor.connected) await monitor.disconnect();
     else await monitor.connect();
   });
-  $("mon-clear").addEventListener("click", () => monitor.clear());
+  $("mon-clear").addEventListener("click", () => (settings.tab === "plotter" ? plotter.clear() : monitor.clear()));
+  $("plot-pause").addEventListener("click", (e) => {
+    const paused = e.currentTarget.getAttribute("aria-pressed") !== "true";
+    e.currentTarget.setAttribute("aria-pressed", String(paused));
+    e.currentTarget.textContent = paused ? "Resume" : "Pause";
+    plotter.setPaused(paused);
+  });
+  $("plot-points").addEventListener("change", (e) => plotter.setMaxPoints(Number(e.target.value)));
 
   const history = [];
   let historyPos = 0;
@@ -425,7 +442,7 @@ function setupMonitorUi() {
     if (!monitor.connected) await monitor.connect();
     if (!monitor.connected) return;
     const line = input.value;
-    await monitor.send(line, settings.lineEnding);
+    await monitor.send(line, LINE_ENDINGS[settings.lineEnding]);
     if (line && history[history.length - 1] !== line) history.push(line);
     historyPos = history.length;
     input.value = "";
@@ -525,6 +542,7 @@ function setupShortcuts() {
         u: actions.upload,
         r: actions.verify,
         m: e.shiftKey ? () => showTab("monitor") : null,
+        l: e.shiftKey ? () => showTab("plotter") : null,
       };
       const fn = map[k];
       if (!fn) return;

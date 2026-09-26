@@ -41,6 +41,7 @@
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="output" aria-selected="true">Output</button>
       <button role="tab" data-tab="monitor" aria-selected="false">Serial Monitor</button>
+      <button role="tab" data-tab="plotter" aria-selected="false" title="Graph the numbers your sketch prints (Ctrl+Shift+L)">Serial Plotter</button>
     </nav>
     <div id="panel-output" class="panel" role="tabpanel">
       <pre id="output" class="console"></pre>
@@ -50,17 +51,29 @@
         <button id="mon-connect">Connect</button>
         <select id="mon-baud" title="Baud rate"></select>
         <select id="mon-ending" title="Line ending added when sending">
-          <option value="">No line ending</option>
-          <option value="\n">Newline</option>
-          <option value="\r">Carriage return</option>
-          <option value="\r\n">Both NL &amp; CR</option>
+          <option value="none">No line ending</option>
+          <option value="nl">Newline</option>
+          <option value="cr">Carriage return</option>
+          <option value="both">Both NL &amp; CR</option>
         </select>
-        <label><input type="checkbox" id="mon-autoscroll" checked> Autoscroll</label>
-        <label><input type="checkbox" id="mon-timestamps"> Timestamps</label>
+        <label class="text-only"><input type="checkbox" id="mon-autoscroll" checked> Autoscroll</label>
+        <label class="text-only"><input type="checkbox" id="mon-timestamps"> Timestamps</label>
+        <button id="plot-pause" class="plot-only" aria-pressed="false">Pause</button>
+        <label class="plot-only">Show
+          <select id="plot-points" title="How many recent samples to show">
+            <option value="100">100</option>
+            <option value="250">250</option>
+            <option value="500" selected>500</option>
+            <option value="1000">1000</option>
+          </select> samples</label>
         <span class="spacer"></span>
         <button id="mon-clear">Clear</button>
       </div>
-      <pre id="mon-out" class="console"></pre>
+      <pre id="mon-out" class="console text-only"></pre>
+      <div id="plot-area" class="plot-area plot-only">
+        <div id="plot-legend" class="plot-legend" aria-live="off"></div>
+        <canvas id="plot-canvas" aria-label="Graph of values received from the board"></canvas>
+      </div>
       <form id="mon-form" class="monitor-send">
         <input id="mon-input" placeholder="Message to send (Enter)" autocomplete="off">
         <button type="submit">Send</button>

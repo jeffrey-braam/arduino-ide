@@ -180,6 +180,37 @@ try {
     return out.filter((l) => /Sketch uses|Done/.test(l)).join(" / ");
   });
 
+  await step("serial plotter graphs named values from the board", async () => {
+    await page.click('.tabs button[data-tab="monitor"]');
+    if ((await page.textContent("#mon-connect")) === "Disconnect") await page.click("#mon-connect");
+    const code = [
+      "void setup() { Serial.begin(9600); }",
+      "void loop() {",
+      "  static int t = 0;",
+      '  Serial.print("wave:"); Serial.print(sin(t * 0.1) * 100);',
+      '  Serial.print(",ramp:"); Serial.println(t % 50);',
+      "  t++; delay(20);",
+      "}",
+    ].join("\n");
+    await page.evaluate((c) => localStorage.setItem("arduino-ide.sketch", JSON.stringify({ name: "PlotTest.ino", code: c, savedCode: c })), code);
+    await page.reload();
+    await page.waitForFunction(() => /Compiler ready/.test(document.getElementById("output").textContent), null, { timeout: 60000 });
+    await page.evaluate(() => (document.getElementById("status-text").textContent = ""));
+    await page.click("#btn-upload");
+    await page.waitForFunction(() => /Upload (complete|failed)|Compilation failed/.test(document.getElementById("status-text").textContent), null, { timeout: 90000 });
+    if ((await page.textContent("#status-text")) !== "Upload complete") throw new Error(await page.textContent("#status-text"));
+    await page.click('.tabs button[data-tab="plotter"]');
+    await page.selectOption("#mon-baud", "9600");
+    await page.click("#mon-connect");
+    await page.waitForFunction(() => document.querySelectorAll("#plot-legend .plot-key").length === 2, null, { timeout: 10000 });
+    const first = await page.textContent("#plot-legend");
+    await page.waitForTimeout(1000);
+    const later = await page.textContent("#plot-legend");
+    if (first === later) throw new Error("plotted values aren't updating");
+    if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, "plotter.png") });
+    return later.replace(/\s+/g, " ").trim();
+  });
+
   await step("monitor disconnects cleanly", async () => {
     await page.click('.tabs button[data-tab="monitor"]');
     await page.click("#mon-connect");

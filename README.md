@@ -3,8 +3,8 @@
 A lightweight Arduino IDE that runs from one downloaded HTML file in Chrome/Edge — including
 locked-down school Chromebooks — with no install and no network access. See `details.md` for goals.
 
-**Status:** editor with tabs, autosave, open/save, examples and libraries browser, in-browser
-compiling (Verify/Upload), serial monitor and upload to an Uno all work. The page's Content-Security-Policy blocks all network access.
+**Status:** editor with tabs, autosave, open/save, examples and libraries browser, About/licenses,
+in-browser compiling (Verify/Upload), Serial Monitor, Serial Plotter and upload to an Uno all work. The page's Content-Security-Policy blocks all network access.
 
 ## Build
 
@@ -30,7 +30,8 @@ The bundled libraries are listed in `build/prepare-compiler.mjs` (`LIBRARIES`).
 npm test                           # unit tests: preprocessor, compiler, hex parser, uploader
 node test/compiler/compare.mjs     # every library example: browser compiler vs arduino-cli
 node test/compiler/asm-compare.mjs # browser cc1plus vs Arduino's native avr-g++: identical assembly
-node test/ui/examples-tabs.mjs     # the built page: examples, libraries, tabs, autosave
+node test/ui/examples-tabs.mjs     # the built page: examples, libraries, tabs, autosave, About
+node test/ui/plotter.mjs           # Serial Plotter and Serial Monitor with a simulated board
 node test/hardware/e2e.mjs COM3    # real Uno: uploads, compiles in the page, serial monitor
 ```
 
@@ -38,6 +39,12 @@ The hardware test **overwrites the sketch on the board**. It bridges `navigator.
 port via node-serialport, because automated browsers can't click through Chrome's port chooser.
 
 `probe/chromebook-test.html` is a standalone compatibility check to run on a student Chromebook.
+
+## For students
+
+`docs/student-guide.pdf` is a one-page guide to share with the IDE (regenerate it from
+`docs/student-guide.html` with `node build/make-guide.mjs`). `examples/SensorKit/` has a starter
+sketch for each module of the 37-in-1 sensor kit; they appear first in the Examples browser.
 
 ## How compiling works
 

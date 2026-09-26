@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Arduino IDE Student Guide</title>
+<style>
+  @page { size: letter; margin: 0.45in 0.5in; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: #1d2330;
+    font: 10.5pt/1.38 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  h1 { margin: 0; font-size: 19pt; color: #00737a; }
+  .lead { margin: 2pt 0 10pt; color: #4b5563; }
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 7pt;
+    margin: 0 0 4pt;
+    font-size: 12pt;
+  }
+  h2 .n {
+    display: inline-grid;
+    place-items: center;
+    width: 17pt;
+    height: 17pt;
+    border-radius: 50%;
+    background: #00878f;
+    color: #fff;
+    font-size: 10pt;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt 18pt; }
+  section { break-inside: avoid; }
+  ul { margin: 0; padding-left: 14pt; }
+  li { margin: 2pt 0; }
+  b.ui {
+    padding: 0 3pt;
+    border: 1px solid #c9ced6;
+    border-radius: 3pt;
+    background: #f3f4f6;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  code { font: 9.5pt ui-monospace, Consolas, monospace; background: #f3f4f6; padding: 0 2pt; border-radius: 2pt; }
+  .note { color: #4b5563; }
+  .box {
+    margin-top: 12pt;
+    padding: 8pt 11pt;
+    border: 1.5px solid #00878f;
+    border-radius: 6pt;
+    break-inside: avoid;
+  }
+  .box h2 { margin-bottom: 3pt; }
+  .keys { margin-top: 9pt; color: #4b5563; font-size: 9.5pt; text-align: center; }
+  .keys b { color: #1d2330; }
+</style>
+</head>
+<body>
+  <h1>Arduino IDE (offline): student guide</h1>
+  <p class="lead">Write, check and upload Arduino programs on your Chromebook. Nothing to install, and no internet needed.</p>
+
+  <div class="grid">
+    <section>
+      <h2><span class="n">1</span>Open the IDE</h2>
+      <ul>
+        <li>In Google Classroom, open <b>arduino-ide.html</b> and <b>download</b> it. It won't run inside the Google Drive preview.</li>
+        <li>Open the <b>Files</b> app → <b>Downloads</b> and click <b>arduino-ide.html</b>. It opens in Chrome.</li>
+        <li class="note">Tip: move it to <b>My files</b> so it's easy to find next time.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><span class="n">2</span>Write your sketch</h2>
+      <ul>
+        <li>Type your code in the editor. Your work is saved automatically in this browser.</li>
+        <li><b class="ui">Examples</b> has ready-made sketches, including one for every module in the sensor kit (KY&#8209;001 to KY&#8209;040).</li>
+        <li><b class="ui">Libraries</b> → <b class="ui">Include</b> adds a library's <code>#include</code> line for you.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><span class="n">3</span>Check and upload</h2>
+      <ul>
+        <li>Plug the Arduino in with the USB cable.</li>
+        <li>Click <b class="ui">✓</b> (Verify) to check your code. Mistakes show in red: click one to jump to that line.</li>
+        <li>Click <b class="ui">➔</b> (Upload). The first time, pick <b>Arduino Uno</b> in the list Chrome shows and click <b>Connect</b>.</li>
+        <li>Wait for <b>Done uploading</b>.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><span class="n">4</span>See what your board says</h2>
+      <ul>
+        <li><b class="ui">Serial Monitor</b> tab → <b class="ui">Connect</b>. Choose the same speed as <code>Serial.begin()</code>, usually <b>9600 baud</b>.</li>
+        <li><b class="ui">Serial Plotter</b> tab draws numbers as a live graph. Name each line like this:<br>
+          <code>Serial.print("light:"); Serial.println(value);</code></li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="box">
+    <h2><span class="n">5</span>Save your work to Google Drive</h2>
+    <ul>
+      <li>Autosave only keeps your work on <b>this</b> Chromebook. To keep it for real, click <b class="ui">Save As</b> and choose your <b>Google Drive</b> folder.</li>
+      <li>After that, <b class="ui">Save</b> updates the same file. A sketch with several tabs is saved as a folder.</li>
+      <li>To continue later, click <b class="ui">Open</b> and pick your file from Google Drive.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <h2><span class="n">?</span>If something goes wrong</h2>
+    <ul>
+      <li><b>The Arduino isn't in Chrome's list:</b> try another USB cable (some only charge) or another USB port.</li>
+      <li><b>“Couldn't open the port”:</b> click <b class="ui">Disconnect</b> in the Serial Monitor and close any other tab using the board.</li>
+      <li><b>Upload failed:</b> unplug the board, plug it back in, and try again.</li>
+      <li><b>Nothing appears in the Serial Monitor:</b> make sure the baud rate matches <code>Serial.begin()</code>.</li>
+      <li><b>Red error you don't understand:</b> look at the line it points to, and the line just above it (often a missing <code>;</code>).</li>
+    </ul>
+  </div>
+
+  <p class="keys">Shortcuts: <b>Ctrl+R</b> verify · <b>Ctrl+U</b> upload · <b>Ctrl+S</b> save · <b>Ctrl+Shift+M</b> Serial Monitor · <b>Ctrl+Shift+L</b> Serial Plotter</p>
+</body>
+</html>

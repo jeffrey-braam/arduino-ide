@@ -15,6 +15,7 @@ Local patches:
 (see `toolchain/patches/`; none means the sources were used as released).
 
 Compiled with emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.10 (d6c521a7f05449857c76bd99e396895583cf2083).
+GCC configured against GNU assembler (GNU Binutils) 2.26.20160125 (Ubuntu package binutils-avr 2.26.20160125+Atmel3.7.0-2).
 
 GCC and binutils are licensed under the GNU GPL version 3 or later; GMP, MPFR and MPC under
 the GNU LGPL version 3 or later.

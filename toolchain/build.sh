@@ -218,6 +218,7 @@ write_sources() {
     echo "(see \`toolchain/patches/\`; none means the sources were used as released)."
     echo
     echo "Compiled with $(emcc --version | head -1)."
+    echo "GCC configured against $(avr-as --version | head -1) (Ubuntu package binutils-avr $(dpkg-query -W -f='${Version}' binutils-avr 2>/dev/null))."
     echo
     echo "GCC and binutils are licensed under the GNU GPL version 3 or later; GMP, MPFR and MPC under"
     echo "the GNU LGPL version 3 or later."

@@ -1,0 +1,3 @@
+# Built tools must stay byte-for-byte as built (SHA256SUMS); scripts run under bash need LF.
+toolchain/out/** -text
+*.sh text eol=lf

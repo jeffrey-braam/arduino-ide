@@ -8,18 +8,18 @@ in-browser compiling (Verify/Upload), Serial Monitor, Serial Plotter and upload 
 
 ## Build
 
-Needs Node.js and [arduino-cli](https://arduino.github.io/arduino-cli/) (only on the machine that
-builds the file; students just get the HTML). The WebAssembly compiler tools are committed in
-`toolchain/out/`; to rebuild them from source, see `toolchain/README.md` (Linux/WSL).
+Needs Node.js, [arduino-cli](https://arduino.github.io/arduino-cli/) and `xz` (XZ Utils; Git for
+Windows includes it, or set `XZ` to its path), only on the machine that builds the file; students
+just get the HTML. The WebAssembly compiler tools are committed in `toolchain/out/`; to rebuild them from source, see `toolchain/README.md` (Linux/WSL).
 
 ```sh
 npm install
 arduino-cli core install arduino:avr@1.8.8
 arduino-cli lib install OneWire DallasTemperature "DHT sensor library" "Adafruit Unified Sensor" \
   IRremote "PulseSensor Playground" Encoder Servo LiquidCrystal CapacitiveSensor
-node build/prepare-compiler.mjs   # precompiles core + libraries -> build/cache/compiler-pack.bin.gz
+node build/prepare-compiler.mjs   # precompiles core + libraries -> build/cache/compiler-pack.bin.lzma
 node build/prepare-examples.mjs   # built-in + library examples that compile for the Uno
-npm run build                     # -> dist/arduino-ide.html (~8 MB, the only file students need)
+npm run build                     # -> dist/arduino-ide.html (~4.5 MB, the only file students need)
 ```
 
 The bundled libraries are listed in `build/prepare-compiler.mjs` (`LIBRARIES`).
@@ -53,6 +53,10 @@ The page embeds GCC 7.3.0 with Arduino's patches (`cc1plus`) and GNU binutils 2.
 avr-gcc. A worker runs cc1plus → as → ld → objcopy on the sketch; `.ino` files get Arduino-style
 prototypes and `#include <Arduino.h>` (`src/compiler/preprocess.js`). Output is ~10% larger than
 the Arduino IDE's because link-time optimisation isn't available.
+
+To keep the file small, everything but a tiny boot script is stored LZMA-compressed (`xz --format=lzma`,
+decoded by `src/lzma.js`) and written into the page as 7-bit text rather than base64
+(`build/embed.mjs`, `src/embedded.js`): the app, the compiler pack, the examples and the About data.
 
 ## Licenses
 

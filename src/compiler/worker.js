@@ -1,6 +1,7 @@
 // Compiler Web Worker: unpacks the embedded compiler data and runs builds off the main thread.
 import { readPack } from "./pack.js";
 import { Toolchain, CompileError } from "./toolchain.js";
+import { unlzma } from "../lzma.js";
 import createCc1plus from "../../toolchain/out/cc1plus.mjs";
 import createAs from "../../toolchain/out/avr-as.mjs";
 import createLd from "../../toolchain/out/avr-ld.mjs";
@@ -8,16 +9,11 @@ import createObjcopy from "../../toolchain/out/avr-objcopy.mjs";
 
 let toolchain = null;
 
-async function gunzip(bytes) {
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-
 self.onmessage = async ({ data: msg }) => {
   if (msg.type === "init") {
     try {
       const t0 = performance.now();
-      const { files, manifest } = readPack(await gunzip(msg.pack));
+      const { files, manifest } = readPack(unlzma(msg.pack));
       toolchain = new Toolchain({
         files,
         manifest,

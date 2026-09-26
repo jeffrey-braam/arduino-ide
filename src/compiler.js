@@ -1,5 +1,5 @@
 // Main-thread side of the compiler: starts the worker with the embedded compiler data and
-// sends it builds. The worker source and the gzipped data are inlined into the page at build time.
+// sends it builds. The worker source and the compressed data are inlined into the page at build time.
 import workerSource from "compiler-worker-source";
 import { takeEmbedded } from "./embedded.js";
 

@@ -17,12 +17,11 @@ export function newSketchName() {
 
 export const baseName = (fileName) => fileName.replace(/\.[^.]*$/, "");
 
-export function makeSketch(files, { handle = null, dirHandle = null, active = 0 } = {}) {
+export function makeSketch(files, { active = 0 } = {}) {
   return {
     files: files.map((f) => ({ name: f.name, code: f.code, savedCode: f.savedCode ?? f.code })),
     active: Math.min(active, files.length - 1),
-    handle, // FileSystemFileHandle: where Save writes a single-file sketch
-    dirHandle, // FileSystemDirectoryHandle: where Save writes a multi-file sketch
+    dirHandle: null, // FileSystemDirectoryHandle: where Save writes a multi-file sketch (else each file's own handle)
     removed: [], // tabs deleted since the last save to a folder
   };
 }

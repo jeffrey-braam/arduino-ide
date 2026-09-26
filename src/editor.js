@@ -55,11 +55,11 @@ const arduinoCompletions = completeFromList([
 
 const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-export function createEditor(parent, { doc, onChange, keys = [] }) {
+export function createEditor(parent, { doc, onChange }) {
   const theme = new Compartment();
   const extensions = () => [
     basicSetup,
-    keymap.of([...keys, indentWithTab]),
+    keymap.of([indentWithTab]),
     cpp(),
     cppLanguage.data.of({ autocomplete: arduinoCompletions }),
     cppLanguage.data.of({ autocomplete: completeAnyWord }),
@@ -82,9 +82,6 @@ export function createEditor(parent, { doc, onChange, keys = [] }) {
   let currentKey = null;
 
   return {
-    view,
-    getText: () => view.state.doc.toString(),
-
     // Shows the file `key`, creating its state from `text` the first time.
     show(key, text) {
       if (currentKey !== null) states.set(currentKey, view.state);

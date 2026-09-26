@@ -4,10 +4,6 @@ export class OutputLog {
     this.pre = pre;
   }
 
-  clear() {
-    this.pre.textContent = "";
-  }
-
   #add(text, cls, onClick) {
     const line = document.createElement("div");
     if (cls) line.className = cls;

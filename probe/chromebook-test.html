@@ -311,18 +311,6 @@ async function checkCompilerPrereqs() {
     "SharedArrayBuffer " + (typeof SharedArrayBuffer === "function" ? "exists" : "missing") +
     ", crossOriginIsolated=" + String(self.crossOriginIsolated) + ". The compiler must be built without threads if this is false.");
 
-  // gzip decompression (lets the embedded compiler be stored compressed)
-  try {
-    const input = new TextEncoder().encode("void setup() {}\n".repeat(2000));
-    const comp = new Uint8Array(await new Response(new Blob([input]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
-    const out = new Uint8Array(await new Response(new Blob([comp]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
-    if (out.length !== input.length || out.some((b, i) => b !== input[i])) throw new Error("round trip mismatch");
-    report("Compiler", "Gzip decompression", "PASS", input.length + " → " + comp.length + " bytes and back.");
-  } catch (e) {
-    ok = false;
-    report("Compiler", "Gzip decompression", "FAIL", errText(e));
-  }
-
   // Decoding large embedded data (base64) — estimates IDE load time
   try {
     const size = 8 * 1024 * 1024;

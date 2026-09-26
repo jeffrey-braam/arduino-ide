@@ -41,8 +41,7 @@ export class Toolchain {
    * @param {{ files: Map<string, Uint8Array>, manifest: object, factories: Record<string, Function> }} opts
    *   factories: Emscripten module factories keyed by tool name (cc1plus, avr-as, avr-ld, avr-objcopy)
    */
-  constructor({ files, manifest, factories, debug = null }) {
-    this.debug = debug;
+  constructor({ files, manifest, factories }) {
     this.files = files;
     this.manifest = manifest;
     this.factories = factories;
@@ -79,7 +78,6 @@ export class Toolchain {
       mod.FS.mkdirTree(p.slice(0, p.lastIndexOf("/")) || "/");
       mod.FS.writeFile(p, data);
     }
-    this.debug?.(`${tool} ${args.join(" ")}`);
     let status = 0;
     try {
       status = mod.callMain(args) ?? 0;
@@ -87,7 +85,6 @@ export class Toolchain {
       if (typeof e?.status === "number") status = e.status;
       else throw e;
     }
-    this.debug?.(`${tool} exited with ${status}`);
     let output = null;
     try {
       output = outputPath ? mod.FS.readFile(outputPath) : null;

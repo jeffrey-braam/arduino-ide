@@ -1,11 +1,11 @@
 // The Examples & Libraries dialog. Its data (built-in examples, bundled libraries and their
-// examples) is embedded in the page as gzipped JSON and unpacked the first time it's opened.
-import { takeEmbedded, gunzip } from "./embedded.js";
+// examples) is embedded in the page as compressed JSON and unpacked the first time it's opened.
+import { unpackText } from "./embedded.js";
 
 const $ = (id) => document.getElementById(id);
 export const browserAvailable = Boolean(document.getElementById("examples-pack"));
 
-const unpackJson = (id) => gunzip(takeEmbedded(id)).then((bytes) => JSON.parse(new TextDecoder().decode(bytes)));
+const unpackJson = async (id) => JSON.parse(unpackText(id));
 let dataPromise = null;
 function loadData() {
   dataPromise ??= browserAvailable ? unpackJson("examples-pack") : Promise.resolve({ builtin: [], libraries: [] });

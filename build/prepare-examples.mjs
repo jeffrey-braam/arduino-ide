@@ -1,4 +1,4 @@
-// Builds the examples/libraries data embedded in the IDE (build/cache/examples.json.gz):
+// Builds the examples/libraries data embedded in the IDE (build/cache/examples.json.lzma):
 // - Arduino's built-in examples (github.com/arduino/arduino-examples, CC0)
 // - every example that ships with the bundled libraries
 // Each example is compiled with the in-browser toolchain; only those that build for the Uno are kept.
@@ -11,6 +11,7 @@ import zlib from "node:zlib";
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { loadToolchain, root } from "./node-toolchain.mjs";
+import { compress } from "./embed.mjs";
 
 const EXAMPLES_TAG = "1.10.3";
 const EXAMPLES_URL = `https://codeload.github.com/arduino/arduino-examples/zip/refs/tags/${EXAMPLES_TAG}`;
@@ -18,7 +19,7 @@ const EXAMPLES_SHA256 = "cc7397c9b50ba5efc634a7c605522f49b5dd422f9c097fff17899fe
 const CORE_VERSION = "1.8.8";
 
 const cacheDir = path.join(root, "build/cache");
-const outFile = path.join(cacheDir, "examples.json.gz");
+const outFile = path.join(cacheDir, "examples.json.lzma");
 const SKETCH_FILE = /\.(ino|h|hpp|cpp)$/i;
 
 // ---------- Minimal ZIP reader (stored + deflate), enough for a GitHub source archive ----------
@@ -236,6 +237,6 @@ const data = {
   libraries,
 };
 const json = Buffer.from(JSON.stringify(data));
-const gz = zlib.gzipSync(json, { level: 9 });
-fs.writeFileSync(outFile, gz);
-console.log(`\n${kept} examples kept, ${dropped} skipped. ${(json.length / 1024).toFixed(0)} KB -> ${(gz.length / 1024).toFixed(0)} KB gzipped (${path.relative(root, outFile)})`);
+const packed = compress(json);
+fs.writeFileSync(outFile, packed);
+console.log(`\n${kept} examples kept, ${dropped} skipped. ${(json.length / 1024).toFixed(0)} KB -> ${(packed.length / 1024).toFixed(0)} KB compressed (${path.relative(root, outFile)})`);

@@ -1,5 +1,6 @@
 /*
   KY-002 Vibration switch
+  Printed on HiLetgo boards as HW-513
 
   Lights the board's LED and prints a message while the module is shaken.
 

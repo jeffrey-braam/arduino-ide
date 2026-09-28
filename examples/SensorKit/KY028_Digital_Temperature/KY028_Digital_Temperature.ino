@@ -1,5 +1,6 @@
 /*
   KY-028 Digital temperature module (thermistor)
+  Printed on HiLetgo boards as HW-503
 
   Shows the temperature reading and switches DO when it passes the level set by the potentiometer.
   Warm the sensor with your fingers to see it change.

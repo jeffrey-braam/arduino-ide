@@ -1,5 +1,6 @@
 /*
   KY-027 Magic light cup
+  Printed on HiLetgo boards as HW-499
 
   The LED fades up when the module is tilted and fades down when it's upright.
   With two modules you can "pour" the light from one cup to the other.
@@ -8,7 +9,7 @@
     S (tilt switch) -> pin 2
     L (LED)         -> pin 5
     +               -> 5V
-    G               -> GND
+    - (or G)        -> GND
 */
 
 const int TILT_PIN = 2;

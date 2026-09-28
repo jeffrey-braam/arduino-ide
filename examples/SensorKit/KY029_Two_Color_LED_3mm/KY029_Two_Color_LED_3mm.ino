@@ -1,5 +1,6 @@
 /*
   KY-029 Two-colour LED (3 mm)
+  Printed on HiLetgo boards as HW-480
 
   Fades between red and green.
 

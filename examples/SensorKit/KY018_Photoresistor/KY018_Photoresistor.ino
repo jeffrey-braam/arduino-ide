@@ -1,5 +1,6 @@
 /*
   KY-018 Photoresistor (light sensor)
+  Printed on HiLetgo boards as HW-486
 
   Prints the light level. Cover the sensor or shine a torch on it.
 

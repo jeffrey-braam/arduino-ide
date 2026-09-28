@@ -1,5 +1,6 @@
 /*
-  KY-037 Microphone sound sensor
+  KY-037 Sound sensor, large microphone (high sensitivity)
+  Printed on HiLetgo boards as HW-485
 
   Shows the sound level. Clap or talk near the microphone.
 

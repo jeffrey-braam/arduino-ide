@@ -1,5 +1,6 @@
 /*
   KY-010 Photo interrupter (light gate)
+  Printed on HiLetgo boards as HW-487
 
   Counts how many times something passes through the slot.
 

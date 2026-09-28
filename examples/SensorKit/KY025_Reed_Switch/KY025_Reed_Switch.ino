@@ -1,5 +1,6 @@
 /*
   KY-025 Reed switch module
+  Printed on HiLetgo boards as HW-484
 
   Detects a magnet next to the reed switch.
 

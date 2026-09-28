@@ -1,5 +1,6 @@
 /*
   KY-040 Rotary encoder
+  Printed on HiLetgo boards as HW-040
 
   Counts clicks as you turn the knob, and resets to zero when you press it.
   Uses the Encoder library (already included).

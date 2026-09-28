@@ -2,6 +2,8 @@
 
 This covers the HiLetgo/generic "37-in-1" sensor kit (KY-001 through KY-040). Most modules need **no library at all** — they're plain analog or digital signals. Only a handful require you to install something.
 
+**HiLetgo boards are printed with HW- numbers, not KY- numbers.** Use the **HW #** column in section 3 to find a board's KY number (for example, the rotary encoder is printed HW-040 and is the KY-040). The two-color LEDs and the two microphones look alike, so check the LED or microphone size as well as the number.
+
 ---
 
 ## 1. Libraries to install (via Library Manager)
@@ -40,45 +42,45 @@ No core function needs a library at all for basic digital/analog work — `pinMo
 
 ## 3. Per-module library reference
 
-| KY # | Module | Library required |
-|---|---|---|
-| KY-001 | Temperature sensor (DS18B20, digital) | OneWire + DallasTemperature |
-| KY-002 | Vibration/shock switch | None |
-| KY-003 | Hall magnetic sensor (digital) | None |
-| KY-004 | Key switch (pushbutton) | None |
-| KY-005 | Infrared transmitter | IRremote (to send codes) |
-| KY-006 | Passive buzzer | None (`tone()`) |
-| KY-008 | Laser transmitter | None |
-| KY-009 | 2-color LED SMD module | None |
-| KY-010 | Photo interrupter (light break) | None |
-| KY-011 | Bi-color LED (5mm) | None |
-| KY-012 | Active buzzer | None |
-| KY-013 | Analog temperature sensor (thermistor) | None (simple math on the analog reading) |
-| KY-015 | Temperature & humidity (DHT11) | DHT sensor library + Adafruit Unified Sensor |
-| KY-016 | RGB LED module | None |
-| KY-017 | Mercury tilt switch | None |
-| KY-018 | Photoresistor (light sensor) | None |
-| KY-019 | 5V relay module | None |
-| KY-020 | Tilt switch | None |
-| KY-021 | Mini reed switch | None |
-| KY-022 | Infrared receiver | IRremote |
-| KY-023 | Joystick (dual-axis) | None |
-| KY-024 | Linear Hall sensor (analog) | None |
-| KY-025 | Reed switch | None |
-| KY-026 | Flame sensor | None |
-| KY-027 | Magic light cup (tilt + LED) | None |
-| KY-028 | Digital temperature module | None |
-| KY-029 | 2-color LED (3mm) | None |
-| KY-031 | Knock/hit sensor | None |
-| KY-032 | Obstacle avoidance (IR) | None |
-| KY-033 | Line-tracking sensor | None |
-| KY-034 | 7-color flashing LED | None (self-cycling, just needs power) |
-| KY-035 | Hall sensor (analog) | None |
-| KY-036 | Metal touch sensor | None |
-| KY-037 | Sensitive microphone (small) | None |
-| KY-038 | Sound sensor (large mic, digital+analog out) | None |
-| KY-039 | Heartbeat/pulse sensor | PulseSensor Playground (optional) |
-| KY-040 | Rotary encoder | Encoder (optional) |
+| KY # | HW # (HiLetgo) | Module | Library required |
+|---|---|---|---|
+| KY-001 | HW-506 | Temperature sensor (DS18B20, digital) | OneWire + DallasTemperature |
+| KY-002 | HW-513 | Vibration/shock switch | None |
+| KY-003 | HW-492 | Hall magnetic sensor (digital) | None |
+| KY-004 | HW-483 | Key switch (pushbutton) | None |
+| KY-005 | HW-489 | Infrared transmitter | IRremote (to send codes) |
+| KY-006 | HW-508 | Passive buzzer | None (`tone()`) |
+| KY-008 | HW-493 | Laser transmitter | None |
+| KY-009 | HW-478 | 2-color LED SMD module | None |
+| KY-010 | HW-487 | Photo interrupter (light break) | None |
+| KY-011 | HW-477 | 2-color LED (5mm) | None |
+| KY-012 | HW-512 | Active buzzer | None |
+| KY-013 | HW-498 | Analog temperature sensor (thermistor) | None (simple math on the analog reading) |
+| KY-015 | HW-507 | Temperature & humidity (DHT11) | DHT sensor library + Adafruit Unified Sensor |
+| KY-016 | HW-479 | RGB LED module | None |
+| KY-017 | HW-505 | Mercury tilt switch | None |
+| KY-018 | HW-486 | Photoresistor (light sensor) | None |
+| KY-019 | HW-482 | 5V relay module | None |
+| KY-020 | HW-501 | Tilt switch | None |
+| KY-021 | HW-497 | Mini reed switch | None |
+| KY-022 | HW-490 | Infrared receiver | IRremote |
+| KY-023 | HW-504 | Joystick (dual-axis) | None |
+| KY-024 | HW-509 | Linear Hall sensor (analog) | None |
+| KY-025 | HW-484 | Reed switch | None |
+| KY-026 | HW-491 | Flame sensor | None |
+| KY-027 | HW-499 | Magic light cup (tilt + LED) | None |
+| KY-028 | HW-503 | Digital temperature module | None |
+| KY-029 | HW-480 | 2-color LED (3mm) | None |
+| KY-031 | HW-500 | Knock/hit sensor | None |
+| KY-032 | HW-488 | Obstacle avoidance (IR) | None |
+| KY-033 | HW-511 | Line-tracking sensor | None |
+| KY-034 | HW-481 | 7-color flashing LED | None (self-cycling, just needs power) |
+| KY-035 | HW-495 | Hall sensor (analog) | None |
+| KY-036 | HW-494 | Metal touch sensor | None |
+| KY-037 | HW-485 | High-sensitivity sound sensor (large mic, digital+analog out) | None |
+| KY-038 | HW-496 | Sound sensor (small mic, digital+analog out) | None |
+| KY-039 | HW-502 | Heartbeat/pulse sensor | PulseSensor Playground (optional) |
+| KY-040 | HW-040 | Rotary encoder | Encoder (optional) |
 
 ---
 

@@ -1,5 +1,6 @@
 /*
   KY-017 Mercury tilt switch
+  Printed on HiLetgo boards as HW-505
 
   Prints whether the module is tilted.
 

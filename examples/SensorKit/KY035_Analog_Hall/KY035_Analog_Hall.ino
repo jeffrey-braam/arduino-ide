@@ -1,5 +1,6 @@
 /*
   KY-035 Analog Hall magnetic sensor
+  Printed on HiLetgo boards as HW-495
 
   Measures a magnetic field. The value moves up or down depending on which pole of a magnet is near.
 

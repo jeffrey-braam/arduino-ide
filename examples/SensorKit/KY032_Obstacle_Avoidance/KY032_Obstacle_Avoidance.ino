@@ -1,5 +1,6 @@
 /*
   KY-032 Infrared obstacle avoidance sensor
+  Printed on HiLetgo boards as HW-488
 
   Detects an object in front of the sensor. Move your hand towards it.
 

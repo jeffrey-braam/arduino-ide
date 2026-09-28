@@ -1,5 +1,6 @@
 /*
   KY-039 Heartbeat sensor
+  Printed on HiLetgo boards as HW-502
 
   Shows the light passing through your fingertip. Each heartbeat makes a small bump in the graph.
 

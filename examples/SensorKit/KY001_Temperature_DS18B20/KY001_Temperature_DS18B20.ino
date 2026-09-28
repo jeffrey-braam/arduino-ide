@@ -1,5 +1,6 @@
 /*
   KY-001 Temperature sensor (DS18B20)
+  Printed on HiLetgo boards as HW-506
 
   Prints the temperature in Celsius once a second.
   Uses the OneWire and DallasTemperature libraries (already included).

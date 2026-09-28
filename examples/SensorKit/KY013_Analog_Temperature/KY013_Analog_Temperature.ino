@@ -1,5 +1,6 @@
 /*
   KY-013 Analog temperature sensor (thermistor)
+  Printed on HiLetgo boards as HW-498
 
   Works out the temperature from the thermistor's resistance and prints it.
 

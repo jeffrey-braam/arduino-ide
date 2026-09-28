@@ -1,5 +1,6 @@
 /*
   KY-026 Flame sensor
+  Printed on HiLetgo boards as HW-491
 
   Detects infrared light from a flame (or a TV remote pointed at it).
 

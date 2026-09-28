@@ -1,5 +1,6 @@
 /*
   KY-034 Seven-colour flashing LED
+  Printed on HiLetgo boards as HW-481
 
   This LED changes colour by itself; the Arduino just switches it on and off.
 

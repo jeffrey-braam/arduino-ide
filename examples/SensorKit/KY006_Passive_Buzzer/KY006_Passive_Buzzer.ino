@@ -1,5 +1,6 @@
 /*
   KY-006 Passive buzzer
+  Printed on HiLetgo boards as HW-508
 
   Plays a short tune with tone(). A passive buzzer can play different pitches;
   the active buzzer (KY-012) can only beep.

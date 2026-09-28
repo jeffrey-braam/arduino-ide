@@ -1,5 +1,6 @@
 /*
   KY-016 RGB LED (5 mm)
+  Printed on HiLetgo boards as HW-479
 
   Cycles the LED through red, green, blue and mixed colours.
 

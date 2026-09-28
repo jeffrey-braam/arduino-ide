@@ -1,5 +1,6 @@
 /*
   KY-021 Mini reed switch
+  Printed on HiLetgo boards as HW-497
 
   Detects a magnet held next to the glass reed switch.
 

@@ -1,5 +1,6 @@
 /*
   KY-036 Metal touch sensor
+  Printed on HiLetgo boards as HW-494
 
   Detects when you touch the metal wire on the module.
 

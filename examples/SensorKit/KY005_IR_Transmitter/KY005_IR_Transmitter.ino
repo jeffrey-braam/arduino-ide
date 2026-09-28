@@ -1,5 +1,6 @@
 /*
   KY-005 Infrared transmitter
+  Printed on HiLetgo boards as HW-489
 
   Sends an infrared remote-control code (NEC protocol) once a second.
   Point it at a KY-022 receiver running the KY022 example to see the codes arrive.

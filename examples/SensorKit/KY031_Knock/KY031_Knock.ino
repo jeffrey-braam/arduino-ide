@@ -1,5 +1,6 @@
 /*
   KY-031 Knock sensor
+  Printed on HiLetgo boards as HW-500
 
   Counts knocks. Tap the sensor or the table next to it.
 

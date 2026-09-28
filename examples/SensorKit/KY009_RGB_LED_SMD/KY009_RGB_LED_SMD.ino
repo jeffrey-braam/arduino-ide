@@ -1,5 +1,6 @@
 /*
   KY-009 RGB LED (SMD)
+  Printed on HiLetgo boards as HW-478
 
   Cycles the LED through red, green, blue and mixed colours.
 

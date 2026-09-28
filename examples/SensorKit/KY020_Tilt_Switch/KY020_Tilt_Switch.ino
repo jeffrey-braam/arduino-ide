@@ -1,5 +1,6 @@
 /*
   KY-020 Tilt switch (ball switch)
+  Printed on HiLetgo boards as HW-501
 
   Prints whether the module is tilted.
 

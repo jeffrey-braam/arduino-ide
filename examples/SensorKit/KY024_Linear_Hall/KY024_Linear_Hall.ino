@@ -1,5 +1,6 @@
 /*
   KY-024 Linear magnetic Hall sensor
+  Printed on HiLetgo boards as HW-509
 
   Measures the strength of a nearby magnetic field. Bring a magnet closer and further away.
 

@@ -1,5 +1,6 @@
 /*
   KY-015 Temperature and humidity sensor (DHT11)
+  Printed on HiLetgo boards as HW-507
 
   Prints the temperature and humidity every two seconds.
   Uses the DHT sensor library (already included).

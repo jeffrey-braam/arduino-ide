@@ -1,5 +1,6 @@
 /*
   KY-003 Hall magnetic sensor
+  Printed on HiLetgo boards as HW-492
 
   Detects a magnet held near the sensor.
 

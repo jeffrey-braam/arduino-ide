@@ -1,5 +1,6 @@
 /*
   KY-023 Joystick
+  Printed on HiLetgo boards as HW-504
 
   Prints the joystick position and whether it's pressed down.
 

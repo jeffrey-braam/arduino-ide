@@ -1,5 +1,6 @@
 /*
   KY-033 Line tracking sensor
+  Printed on HiLetgo boards as HW-511
 
   Tells a dark line from a light surface. Move the sensor over black tape on white paper.
 

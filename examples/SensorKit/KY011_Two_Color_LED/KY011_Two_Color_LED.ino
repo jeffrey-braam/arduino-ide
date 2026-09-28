@@ -1,5 +1,6 @@
 /*
   KY-011 Two-colour LED (5 mm)
+  Printed on HiLetgo boards as HW-477
 
   Fades between red and green.
 

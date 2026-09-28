@@ -1,5 +1,6 @@
 /*
   KY-022 Infrared receiver
+  Printed on HiLetgo boards as HW-490
 
   Prints the code of each button you press on an infrared remote control.
   Uses the IRremote library (already included).

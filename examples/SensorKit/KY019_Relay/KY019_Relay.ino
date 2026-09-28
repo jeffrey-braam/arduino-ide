@@ -1,5 +1,6 @@
 /*
   KY-019 Relay
+  Printed on HiLetgo boards as HW-482
 
   Switches the relay on and off every two seconds. You'll hear it click and see its LED.
 

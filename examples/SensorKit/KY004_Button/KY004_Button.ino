@@ -1,5 +1,6 @@
 /*
   KY-004 Push button (key switch)
+  Printed on HiLetgo boards as HW-483
 
   Prints when the button is pressed and released.
 

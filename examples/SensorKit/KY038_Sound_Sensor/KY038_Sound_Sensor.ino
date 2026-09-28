@@ -1,5 +1,6 @@
 /*
-  KY-038 Sound sensor
+  KY-038 Sound sensor, small microphone
+  Printed on HiLetgo boards as HW-496
 
   Shows the sound level. Clap or talk near the microphone.
 

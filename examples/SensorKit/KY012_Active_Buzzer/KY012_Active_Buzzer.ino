@@ -1,5 +1,6 @@
 /*
   KY-012 Active buzzer
+  Printed on HiLetgo boards as HW-512
 
   Beeps in a pattern. An active buzzer makes its own sound when switched on,
   so it only needs digitalWrite (for different notes, use the KY-006 passive buzzer).

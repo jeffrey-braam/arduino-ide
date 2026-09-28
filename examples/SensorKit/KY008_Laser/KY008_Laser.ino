@@ -1,5 +1,6 @@
 /*
   KY-008 Laser transmitter
+  Printed on HiLetgo boards as HW-493
 
   Switches the laser on and off every second.
 

@@ -205,7 +205,7 @@ for (const categoryDir of [...new Set(allBuiltin.map((e) => e.categoryDir))]) {
 }
 
 console.log("Sensor kit examples");
-// Starter sketches for the classroom's 37-in-1 KY sensor kit, kept in this repository.
+// Starter sketches for the classroom's 37-in-1 sensor kit (named by the HW- numbers printed on the boards), kept in this repository.
 const kitExamples = libraryExamples(path.join(root, "examples"), "SensorKit");
 const kit = kitExamples.length ? [{ category: "37-in-1 Sensor Kit", examples: await keepCompiling(kitExamples, "Sensor Kit") }] : [];
 

@@ -36,9 +36,9 @@ const counts = await page.$$eval(".ex-group summary", (s) => s.map((x) => x.text
 check("examples dialog lists groups", counts.length > 10, counts.slice(0, 4).join(", ") + " … " + counts.length + " groups");
 await shot("ui-examples.png");
 check("sensor kit group comes first", counts[0] === "37-in-1 Sensor Kit (37)", counts[0]);
-await page.fill("#browser-search", "KY022");
+await page.fill("#browser-search", "HW490");
 await page.dblclick(".ex-item:not([hidden])");
-check("kit example opens and compiles", (await tabs()).join() === "KY022_IR_Receiver.ino" && (await verify()) === "Done compiling");
+check("kit example opens and compiles", (await tabs()).join() === "HW490_IR_Receiver.ino" && (await verify()) === "Done compiling");
 await page.click("#btn-examples");
 await page.fill("#browser-search", "blinkwithout");
 const visible = await page.$$eval(".ex-item", (els) => els.filter((e) => !e.hidden).map((e) => e.textContent));

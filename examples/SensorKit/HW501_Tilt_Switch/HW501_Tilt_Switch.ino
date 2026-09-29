@@ -1,0 +1,32 @@
+/*
+  HW-501 Tilt switch (ball switch)
+  Same module as KY-020 in other sensor kits
+
+  Prints whether the module is tilted.
+
+  Wiring (check the labels on your module; pin order varies between kits):
+    S (signal)  -> pin 3
+    middle pin  -> 5V
+    - (minus)   -> GND
+*/
+
+const int SENSOR_PIN = 3;
+int lastState = -1;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(SENSOR_PIN, INPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+}
+
+void loop() {
+  int state = digitalRead(SENSOR_PIN);
+  bool active = (state == HIGH);
+  digitalWrite(LED_BUILTIN, active ? HIGH : LOW);  // the board's LED shows the sensor
+
+  if (state != lastState) {  // only print when something changes
+    Serial.println(active ? "Tilted" : "Upright");
+    lastState = state;
+  }
+  delay(10);
+}

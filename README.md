@@ -44,7 +44,10 @@ port via node-serialport, because automated browsers can't click through Chrome'
 
 `docs/student-guide.pdf` is a one-page guide to share with the IDE (regenerate it from
 `docs/student-guide.html` with `node build/make-guide.mjs`). `examples/SensorKit/` has a starter
-sketch for each module of the 37-in-1 sensor kit; they appear first in the Examples browser.
+sketch for each module of the 37-in-1 sensor kit, named by the HW- number printed on the board
+(`kit-inventory.md` and `arduino-sensor-libraries.md` give the matching KY- numbers); they appear
+first in the Examples browser. `docs/getting-started-with-arduino.docx` is a longer handout on what
+an Arduino is, how it works, and what the kit's modules can do.
 
 ## How compiling works
 

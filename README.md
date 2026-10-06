@@ -17,7 +17,10 @@ Needs [Rust](https://rustup.rs) with the `wasm32-unknown-unknown` target, the
 [wasm-bindgen CLI](https://github.com/wasm-bindgen/wasm-bindgen/releases) at the version pinned in
 `crates/wasm/Cargo.toml`, Node.js (for esbuild, CodeMirror and running the GCC tools),
 [arduino-cli](https://arduino.github.io/arduino-cli/) and `xz` (XZ Utils; Git for Windows includes
-it, or set `XZ` to its path), only on the machine that builds the file; students just get the HTML. The WebAssembly compiler tools are committed in `toolchain/out/`; to rebuild them from source, see `toolchain/README.md` (Linux/WSL).
+it, or set `XZ` to its path), only on the machine that builds the file; students just get the HTML.
+Optionally, `wasm-opt` from [binaryen](https://github.com/WebAssembly/binaryen/releases) on the
+PATH makes the Rust WebAssembly about a third smaller; the build warns and skips it if it's missing.
+The WebAssembly compiler tools are committed in `toolchain/out/`; to rebuild them from source, see `toolchain/README.md` (Linux/WSL).
 
 ```sh
 rustup target add wasm32-unknown-unknown
@@ -29,7 +32,7 @@ arduino-cli lib install OneWire DallasTemperature "DHT sensor library" "Adafruit
 cargo aide wasm                   # Rust core -> WebAssembly (build/cache/wasm/)
 cargo aide prepare-compiler       # precompiles core + libraries -> build/cache/compiler-pack.bin.lzma
 cargo aide prepare-examples       # built-in + library examples that compile for the Uno
-cargo aide build                  # -> dist/arduino-ide.html (~5 MB, the only file students need)
+cargo aide build                  # -> dist/arduino-ide.html (~4.4 MB, the only file students need)
 ```
 
 `cargo aide build --watch` rebuilds on changes. The bundled libraries are listed in
@@ -71,10 +74,16 @@ to run (`crates/core/src/toolchain.rs`); `src/compiler/toolchain.js` only starts
 the Arduino IDE's because link-time optimisation isn't available.
 
 To keep the file small, everything but a tiny boot script is stored LZMA-compressed (`xz --format=lzma`,
-decoded by `crates/core/src/lzma.rs`) and written into the page as 7-bit text rather than base64
-(`crates/core/src/embed.rs`): the app (JavaScript plus the Rust core's WebAssembly), the compiler
-pack, the examples and the About data. The boot script carries a 30 KB WebAssembly decoder
-(`crates/boot`) that unpacks the app.
+decoded by `crates/core/src/lzma.rs`) and written into the page byte for byte rather than as base64
+(`crates/core/src/embed.rs`): the app, the Rust core's WebAssembly, the compiler pack, the examples
+and the About data. That's why the page is declared `windows-1252`, where every byte is a valid
+character; only NUL, CR and `<` need escaping, so the data costs ~1.6% extra instead of a third.
+Keep `src/index.html`, `src/styles.css` and the boot script ASCII (the build checks). The boot
+script carries a 21 KB WebAssembly decoder (`crates/boot`) that unpacks the app and the core.
+
+The compiler pack is ~85% of the file, almost all of it `cc1plus`. A `wasm-opt -Oz` pass over the
+GCC tools was tried and saves only ~33 KB (emscripten's `-O2` link already does most of it), so the
+tools are left as built.
 
 ## Licenses
 

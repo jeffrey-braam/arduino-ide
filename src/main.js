@@ -2,7 +2,7 @@ import { createEditor } from "./editor.js";
 import { PortManager } from "./serial/ports.js";
 import { SerialMonitor, BAUD_RATES } from "./monitor.js";
 import { uploadStk500 } from "./upload/stk500.js";
-import { parseIntelHex } from "./upload/intelhex.js";
+import { parseIntelHex } from "#core";
 import { BOARDS, DEFAULT_BOARD } from "./boards.js";
 import { OutputLog } from "./log.js";
 import * as storage from "./storage.js";

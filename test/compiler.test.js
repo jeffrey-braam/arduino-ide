@@ -1,4 +1,5 @@
-// Runs the real WebAssembly toolchain. Skipped until `node build/prepare-compiler.mjs` has been run.
+// Runs the real WebAssembly toolchain through the Rust core. Skipped until
+// `cargo aide prepare-compiler` has been run.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

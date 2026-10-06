@@ -1,4 +1,7 @@
 // The open sketch: one or more files shown as tabs. files[0] is the main .ino.
+// Tab name rules and ordering are in Rust (crates/core/src/sketch.rs).
+import { validateTabName as validate, orderOpenedFiles as order } from "#core";
+
 export const DEFAULT_CODE = `void setup() {
   // put your setup code here, to run once:
 
@@ -47,22 +50,10 @@ export function fromStorage(data) {
   return null;
 }
 
-const ALLOWED_EXT = /\.(ino|h|hpp|cpp)$/i;
-
 // Checks a new tab name; adds .ino when there's no extension. Returns { name } or { error }.
-export function validateTabName(input, s) {
-  let name = input.trim();
-  if (!name) return { error: "Please enter a name." };
-  if (!/\.[^.]+$/.test(name)) name += ".ino";
-  if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(name)) return { error: "Use only letters, numbers, _ . and -, starting with a letter, number or _." };
-  if (!ALLOWED_EXT.test(name)) return { error: "Tabs can be .ino, .h, .hpp or .cpp files." };
-  if (s.files.some((f) => f.name.toLowerCase() === name.toLowerCase())) return { error: `There's already a tab called “${name}”.` };
-  return { name };
-}
+export const validateTabName = (input, s) => validate(input, s.files.map((f) => f.name));
 
 // Picks the main file among opened files: the .ino that defines setup(), else the first .ino.
 export function orderOpenedFiles(opened) {
-  const inos = opened.filter((f) => /\.(ino|pde)$/i.test(f.name)).sort((a, b) => a.name.localeCompare(b.name));
-  const main = inos.find((f) => /\bvoid\s+setup\s*\(/.test(f.code)) ?? inos[0] ?? opened[0];
-  return [main, ...opened.filter((f) => f !== main).sort((a, b) => a.name.localeCompare(b.name))];
+  return Array.from(order(opened.map(({ name, code }) => ({ name, code }))), (i) => opened[i]);
 }

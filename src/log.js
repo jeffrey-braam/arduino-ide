@@ -1,4 +1,7 @@
-// The Output panel: timestamped build/upload messages.
+// The Output panel: timestamped build/upload messages. Compiler output is classified by the
+// Rust core (crates/core/src/toolchain.rs).
+import { outputLines } from "#core";
+
 export class OutputLog {
   constructor(pre) {
     this.pre = pre;
@@ -19,14 +22,7 @@ export class OutputLog {
 
   // Compiler output: colours errors/warnings and makes messages about the sketch clickable.
   compilerOutput(text, { onLocation } = {}) {
-    for (const raw of text.split("\n")) {
-      if (!raw.trim()) continue;
-      const line = raw.replace(/\/build\/sketch\//g, "");
-      const m = line.match(/^([^:\s]+):(\d+):(\d+): (fatal error|error|warning|note):/);
-      const kind = m?.[4] || "";
-      const cls = kind.endsWith("error") ? "error" : kind === "warning" ? "warn" : "muted";
-      this.#add(line, cls, m && onLocation ? () => onLocation(m[1], +m[2], +m[3]) : null);
-    }
+    for (const l of outputLines(text)) this.#add(l.text, l.class, l.file && onLocation ? () => onLocation(l.file, l.line, l.column) : null);
   }
 
   info(text) { this.#add(text); }

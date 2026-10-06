@@ -4,26 +4,8 @@
 //   Serial.print(a); Serial.print(" "); Serial.println(b); -> two lines ("value 1", "value 2")
 //   Serial.print("light:"); Serial.print(l); Serial.print(","); ... -> named lines
 // Values can be separated by spaces, tabs or commas. Lines without numbers are ignored.
-
-const NUMBER = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
-
-// Returns [{ label, value }] for one line of serial output, or [] if it holds no data.
-export function parsePlotLine(line) {
-  const out = [];
-  let unnamed = 0;
-  for (const token of line.trim().split(/[\s,]+/)) {
-    if (!token) continue;
-    const colon = token.lastIndexOf(":");
-    if (colon > 0) {
-      const label = token.slice(0, colon);
-      const value = token.slice(colon + 1);
-      if (NUMBER.test(value)) out.push({ label, value: Number(value) });
-    } else if (NUMBER.test(token)) {
-      out.push({ label: `value ${++unnamed}`, value: Number(token) });
-    }
-  }
-  return out;
-}
+// Parsing is in Rust (crates/core/src/plotter.rs); this file draws.
+import { parsePlotLine } from "#core";
 
 const COLORS = ["#2a9d8f", "#e76f51", "#3a86ff", "#e9a800", "#b5179e", "#6a994e", "#8d6e63", "#7f8c8d"];
 

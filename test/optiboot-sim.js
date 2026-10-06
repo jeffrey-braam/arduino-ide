@@ -1,3 +1,4 @@
+// Used by test/upload.test.js to check the page's upload path without a board.
 // A fake Web Serial port with an Uno's Optiboot bootloader behind it, including the quirks that
 // matter for uploading: reset on DTR rising edge, a ~0.4 s LED blink during which the UART only
 // holds 3 bytes, a 1 s listen window, and jumping to the sketch on a malformed command.

@@ -1,7 +1,8 @@
 // Main-thread side of the compiler: starts the worker with the embedded compiler data and
 // sends it builds. The worker source and the compressed data are inlined into the page at build time.
-import workerSource from "compiler-worker-source";
+import workerSource from "#compiler-worker";
 import { takeEmbedded } from "./embedded.js";
+import { coreModule } from "./core.js";
 
 const packElement = typeof document !== "undefined" ? document.getElementById("compiler-pack") : null;
 export const compilerAvailable = Boolean(packElement && workerSource);
@@ -41,7 +42,7 @@ export function startCompiler() {
       worker = null;
       ready = null; // allow a restart
     };
-    worker.postMessage({ type: "init", pack }, [pack.buffer]);
+    worker.postMessage({ type: "init", pack, core: coreModule() }, [pack.buffer]);
   });
   return ready;
 }

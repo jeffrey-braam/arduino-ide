@@ -1,0 +1,3 @@
+[alias]
+# The build tool: `cargo aide build`, `cargo aide prepare-compiler`, ...
+aide = "run -q --release -p aide-build --"

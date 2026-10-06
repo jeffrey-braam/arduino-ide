@@ -1,4 +1,7 @@
-// Serial Monitor: reads text from the board and sends lines to it.
+// Serial Monitor: reads text from the board and sends lines to it. Line handling and timestamps
+// are in Rust (crates/core/src/monitor.rs).
+import { MonitorStream } from "#core";
+
 export const BAUD_RATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 74880, 115200, 230400, 250000];
 
 const MAX_CHARS = 300000; // trim the oldest output beyond this to keep the page responsive
@@ -22,8 +25,7 @@ export class SerialMonitor extends EventTarget {
     this.reader = null;
     this.loop = null;
     this.pending = "";
-    this.atLineStart = true;
-    this.partialLine = ""; // incomplete last line, for "line" events
+    this.stream = new MonitorStream();
     this.flushQueued = false;
     this.encoder = new TextEncoder();
   }
@@ -44,7 +46,7 @@ export class SerialMonitor extends EventTarget {
     }
     this.port = port;
     this.decoder = new TextDecoder();
-    this.partialLine = "";
+    this.stream.resetLines();
     this.loop = this.#readLoop();
     this.#emit("state");
   }
@@ -93,7 +95,7 @@ export class SerialMonitor extends EventTarget {
 
   clear() {
     this.text.data = "";
-    this.atLineStart = true;
+    this.stream.clear();
   }
 
   async #readLoop() {
@@ -125,20 +127,14 @@ export class SerialMonitor extends EventTarget {
   }
 
   #append(chunk) {
-    chunk = chunk.replace(/\r/g, ""); // println sends \r\n; the \r would show as a stray space
-    this.#emitLines(chunk);
-    if (this.settings.timestamps) {
-      let out = "";
-      for (const ch of chunk) {
-        if (this.atLineStart) out += timestamp();
-        out += ch;
-        this.atLineStart = ch === "\n";
-      }
-      chunk = out;
-    } else if (chunk) {
-      this.atLineStart = chunk.endsWith("\n");
+    const { timestamps } = this.settings;
+    this.pending += this.stream.push(chunk, timestamps, timestamps ? timestamp() : "");
+    // A "line" event per complete line received (used by the Serial Plotter).
+    for (const line of this.stream.takeLines()) {
+      const e = new Event("line");
+      e.line = line;
+      this.dispatchEvent(e);
     }
-    this.pending += chunk;
     if (!this.flushQueued) {
       this.flushQueued = true;
       requestAnimationFrame(() => this.#flush());
@@ -151,18 +147,6 @@ export class SerialMonitor extends EventTarget {
     this.pending = "";
     if (this.text.length > MAX_CHARS) this.text.deleteData(0, this.text.length - TRIM_TO);
     if (this.settings.autoscroll) this.out.scrollTop = this.out.scrollHeight;
-  }
-
-  // Fires a "line" event per complete line received (used by the Serial Plotter).
-  #emitLines(chunk) {
-    const parts = (this.partialLine + chunk).split("\n");
-    this.partialLine = parts.pop();
-    if (this.partialLine.length > 4096) this.partialLine = ""; // no newline in sight: not line data
-    for (const line of parts) {
-      const e = new Event("line");
-      e.line = line;
-      this.dispatchEvent(e);
-    }
   }
 
   #emit(type, message) {

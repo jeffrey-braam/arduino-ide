@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/wasm", "crates/boot", "crates/build"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Small WebAssembly for the page. The build tool overrides opt-level for speed.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.release.package.aide-build]
+opt-level = 3

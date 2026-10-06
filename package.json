@@ -4,10 +4,17 @@
   "private": true,
   "description": "Offline single-file Arduino IDE for Chromebooks",
   "type": "module",
+  "imports": {
+    "#core": "./build/cache/wasm/core/aide_wasm.js",
+    "#core-wasm": "./build/cache/wasm/core/aide_wasm_bg.wasm",
+    "#boot": "./build/cache/wasm/boot/aide_boot.js",
+    "#boot-wasm": "./build/cache/wasm/boot/aide_boot_bg.wasm",
+    "#compiler-worker": "./build/cache/compiler-worker.txt"
+  },
   "scripts": {
-    "build": "node build/build.mjs",
-    "watch": "node build/build.mjs --watch",
-    "test": "node --test test/*.test.js"
+    "build": "cargo aide build",
+    "watch": "cargo aide build --watch",
+    "test": "cargo test --workspace && cargo aide wasm && node --test test/*.test.js"
   },
   "devDependencies": {
     "@codemirror/autocomplete": "^6.20.3",

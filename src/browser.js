@@ -297,8 +297,8 @@ function renderAbout(root, about, libraries) {
       ),
     ),
     section(
-      "Code editor",
-      "The editor is CodeMirror 6 and the small packages it's built from.",
+      "Code editor and IDE",
+      "The editor is CodeMirror 6 and the small packages it's built from. The rest of the IDE is written in Rust; the Rust packages it uses are marked (Rust).",
       about.packages.map((p) => licenseEntry({ name: p.name, version: p.version, license: p.license, texts: [{ title: "License", text: p.text }] })),
     ),
   );

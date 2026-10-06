@@ -1,27 +1,10 @@
 // Tracks which Web Serial port the IDE uses, following plug/unplug events.
-const VENDORS = {
-  0x2341: "Arduino",
-  0x2a03: "Arduino",
-  0x1a86: "CH340 USB serial",
-  0x0403: "FTDI USB serial",
-  0x10c4: "CP210x USB serial",
-  0x067b: "PL2303 USB serial",
-};
-const PRODUCTS = {
-  "2341:0043": "Arduino Uno",
-  "2341:0001": "Arduino Uno",
-  "2a03:0043": "Arduino Uno",
-  "2341:0243": "Arduino Uno",
-};
-
-const hex4 = (n) => n.toString(16).padStart(4, "0");
+import { describePort as describeUsb } from "#core";
 
 export function describePort(port) {
   if (!port) return "No port selected";
-  const { usbVendorId: vid, usbProductId: pid } = port.getInfo();
-  if (vid === undefined) return "Serial port";
-  const id = hex4(vid) + ":" + hex4(pid ?? 0);
-  return (PRODUCTS[id] || VENDORS[vid] || "USB serial device") + " (" + id + ")";
+  const { usbVendorId, usbProductId } = port.getInfo();
+  return describeUsb(usbVendorId, usbProductId);
 }
 
 export class PortManager extends EventTarget {

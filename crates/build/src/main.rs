@@ -2,7 +2,7 @@
 //!
 //!   wasm               builds the Rust core to WebAssembly (build/cache/wasm/)
 //!   build [--watch] [--no-compiler]
-//!                      bundles everything into dist/arduino-ide.html
+//!                      bundles everything into dist/arduino-ide.html, and dist/arduino-ide.zip to share
 //!   prepare-compiler   precompiles the Arduino core + libraries -> build/cache/compiler-pack.bin.lzma
 //!   prepare-examples   built-in + library examples that compile for the Uno -> build/cache/examples.json.lzma
 
@@ -10,6 +10,7 @@ mod bundle;
 mod prepare_compiler;
 mod prepare_examples;
 mod util;
+mod zip;
 
 use std::process::ExitCode;
 

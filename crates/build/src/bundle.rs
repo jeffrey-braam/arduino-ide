@@ -182,6 +182,10 @@ fn assemble(root: &Path, no_compiler: bool, minify: bool) -> Result {
         if with_compiler { ", with compiler" } else { ", no compiler" },
         if with_examples { ", with examples" } else { "" }
     );
+    // What to share with students: previewing the bare .html freezes the tab (see zip.rs).
+    let zip = crate::zip::write(&[("arduino-ide.html", &out)]);
+    write(&root.join("dist/arduino-ide.zip"), &zip)?;
+    println!("Built dist/arduino-ide.zip ({}): share this one with students", util::mb(zip.len()));
     Ok(())
 }
 

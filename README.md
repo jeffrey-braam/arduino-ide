@@ -32,7 +32,7 @@ arduino-cli lib install OneWire DallasTemperature "DHT sensor library" "Adafruit
 cargo aide wasm                   # Rust core -> WebAssembly (build/cache/wasm/)
 cargo aide prepare-compiler       # precompiles core + libraries -> build/cache/compiler-pack.bin.lzma
 cargo aide prepare-examples       # built-in + library examples that compile for the Uno
-cargo aide build                  # -> dist/arduino-ide.html (~4.4 MB, the only file students need)
+cargo aide build                  # -> dist/arduino-ide.html (~4.4 MB) and dist/arduino-ide.zip (share this)
 ```
 
 `cargo aide build --watch` rebuilds on changes. The bundled libraries are listed in
@@ -56,6 +56,12 @@ port via node-serialport, because automated browsers can't click through Chrome'
 `probe/chromebook-test.html` is a standalone compatibility check to run on a student Chromebook.
 
 ## For students
+
+Share **`dist/arduino-ide.zip`**, not the bare .html. Clicking an .html attachment in Google
+Classroom or Drive opens a preview that lays out the whole file as text (millions of characters of
+embedded data), which freezes the tab for minutes on a Chromebook. A zip previews as a file list.
+Students download it, open it in the Files app (ChromeOS opens zips directly) and double-click
+`arduino-ide.html`, which opens in Chrome and works offline.
 
 `docs/student-guide.pdf` is a one-page guide to share with the IDE (regenerate it from
 `docs/student-guide.html` with `node build/make-guide.mjs`). `examples/SensorKit/` has a starter

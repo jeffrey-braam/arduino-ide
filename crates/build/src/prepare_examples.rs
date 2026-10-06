@@ -44,35 +44,6 @@ fn is_sketch_file(name: &str) -> bool {
     [".ino", ".h", ".hpp", ".cpp"].iter().any(|e| n.ends_with(e))
 }
 
-// ---------- Minimal ZIP reader (stored + deflate), enough for a GitHub source archive ----------
-
-fn read_zip(buf: &[u8]) -> Result<Vec<(String, Vec<u8>)>> {
-    let u16_at = |o: usize| -> Result<usize> { buf.get(o..o + 2).map(|b| u16::from_le_bytes([b[0], b[1]]) as usize).ok_or("bad zip file".into()) };
-    let u32_at = |o: usize| -> Result<usize> { buf.get(o..o + 4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]) as usize).ok_or("bad zip file".into()) };
-    let eocd = (0..=buf.len().saturating_sub(22)).rev().find(|&i| u32_at(i).ok() == Some(0x0605_4b50)).ok_or("not a zip file")?;
-    let count = u16_at(eocd + 10)?;
-    let mut p = u32_at(eocd + 16)?;
-    let mut files = Vec::new();
-    for _ in 0..count {
-        if u32_at(p)? != 0x0201_4b50 {
-            return Err("bad zip central directory".into());
-        }
-        let method = u16_at(p + 10)?;
-        let csize = u32_at(p + 20)?;
-        let (name_len, extra_len, comment_len) = (u16_at(p + 28)?, u16_at(p + 30)?, u16_at(p + 32)?);
-        let local = u32_at(p + 42)?;
-        let name = String::from_utf8_lossy(&buf[p + 46..p + 46 + name_len]).into_owned();
-        let start = local + 30 + u16_at(local + 26)? + u16_at(local + 28)?;
-        let data = buf.get(start..start + csize).ok_or("truncated zip file")?;
-        if !name.ends_with('/') {
-            let data = if method == 8 { miniz_oxide::inflate::decompress_to_vec(data).map_err(|e| format!("{name}: {e:?}"))? } else { data.to_vec() };
-            files.push((name, data));
-        }
-        p += 46 + name_len + extra_len + comment_len;
-    }
-    Ok(files)
-}
-
 fn builtin_archive(cache_dir: &Path) -> Result<Vec<(String, Vec<u8>)>> {
     let zip_path = cache_dir.join(format!("arduino-examples-{EXAMPLES_TAG}.zip"));
     if !zip_path.exists() {
@@ -86,7 +57,7 @@ fn builtin_archive(cache_dir: &Path) -> Result<Vec<(String, Vec<u8>)>> {
     if sha != EXAMPLES_SHA256 {
         return Err(format!("Checksum mismatch for {}: {sha}", zip_path.display()));
     }
-    read_zip(&buf)
+    crate::zip::read(&buf)
 }
 
 // ---------- Collect examples ----------

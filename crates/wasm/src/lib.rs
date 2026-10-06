@@ -32,9 +32,10 @@ fn error_message(e: &JsValue) -> String {
 
 // ---------- Data formats ----------
 
+/// The (still compressed) bytes of an embedded pack, from its element's text.
 #[wasm_bindgen(js_name = decodeEmbedded)]
-pub fn decode_text(text: &str) -> Vec<u8> {
-    embed::decode_text(text)
+pub fn decode_text(text: &str) -> Result<Vec<u8>, JsError> {
+    embed::decode_text(text).map_err(JsError::new)
 }
 
 #[wasm_bindgen]
@@ -45,7 +46,7 @@ pub fn unlzma(data: &[u8]) -> Result<Vec<u8>, JsError> {
 /// Decodes an embedded pack and decompresses it to text.
 #[wasm_bindgen(js_name = unpackText)]
 pub fn unpack_text(text: &str) -> Result<String, JsError> {
-    let bytes = lzma::unlzma(&embed::decode_text(text))?;
+    let bytes = lzma::unlzma(&embed::decode_text(text).map_err(JsError::new)?)?;
     Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 

@@ -6,7 +6,6 @@
   "type": "module",
   "imports": {
     "#core": "./build/cache/wasm/core/aide_wasm.js",
-    "#core-wasm": "./build/cache/wasm/core/aide_wasm_bg.wasm",
     "#boot": "./build/cache/wasm/boot/aide_boot.js",
     "#boot-wasm": "./build/cache/wasm/boot/aide_boot_bg.wasm",
     "#compiler-worker": "./build/cache/compiler-worker.txt"

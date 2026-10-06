@@ -119,8 +119,11 @@ pub fn compress(data: &[u8]) -> Result<Vec<u8>> {
 }
 
 /// A pack in the page: compressed data written as text (see aide_core::embed).
-pub fn embed(id: &str, compressed: &[u8]) -> String {
-    format!("<script type=\"application/octet-stream\" id=\"{id}\">{}</script>", aide_core::embed::encode_text(compressed))
+pub fn embed(id: &str, compressed: &[u8]) -> Vec<u8> {
+    let mut out = format!("<script type=\"application/octet-stream\" id=\"{id}\">").into_bytes();
+    out.extend(aide_core::embed::encode(compressed));
+    out.extend_from_slice(b"</script>");
+    out
 }
 
 pub fn mb(n: usize) -> String {

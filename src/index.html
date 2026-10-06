@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<!-- windows-1252 so embedded data costs one byte per byte (see crates/core/src/embed.rs). Keep this file ASCII. -->
+<meta charset="windows-1252">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Guarantees the page never contacts the network: no fetches, no external scripts or styles. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src blob:; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">

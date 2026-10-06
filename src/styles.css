@@ -114,7 +114,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   white-space: nowrap;
 }
 .file-tab[aria-selected="true"] { background: var(--panel); color: var(--text); font-weight: 600; }
-.file-tab.dirty .tab-name::after { content: " ●"; color: var(--accent); }
+.file-tab.dirty .tab-name::after { content: " \25CF"; color: var(--accent); }
 .file-tab .tab-close {
   display: inline-grid;
   place-items: center;

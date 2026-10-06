@@ -21,11 +21,31 @@ pub fn build_wasm() -> Result {
     let root = root();
     exec(cargo().current_dir(&root).args(["build", "--quiet", "--release", "--target", "wasm32-unknown-unknown", "-p", "aide-wasm", "-p", "aide-boot"]))?;
     let target = root.join("target/wasm32-unknown-unknown/release");
+    let have_wasm_opt = Command::new("wasm-opt").arg("--version").output().is_ok_and(|o| o.status.success());
+    if !have_wasm_opt {
+        eprintln!("wasm-opt (binaryen) not found: the WebAssembly won't be size-optimised. See README.");
+    }
     for (name, dir) in [("aide_wasm", "core"), ("aide_boot", "boot")] {
-        exec(Command::new("wasm-bindgen").args(["--target", "web", "--out-dir"]).arg(root.join("build/cache/wasm").join(dir)).arg(target.join(format!("{name}.wasm"))))
+        let out_dir = root.join("build/cache/wasm").join(dir);
+        exec(Command::new("wasm-bindgen").args(["--target", "web", "--out-dir"]).arg(&out_dir).arg(target.join(format!("{name}.wasm"))))
             .map_err(|e| format!("{e}\nInstall the wasm-bindgen CLI matching crates/wasm/Cargo.toml (see README)."))?;
+        if have_wasm_opt {
+            let wasm = out_dir.join(format!("{name}_bg.wasm"));
+            exec(Command::new("wasm-opt").arg("-Oz").args(WASM_FEATURES).arg(&wasm).arg("-o").arg(&wasm))?;
+        }
     }
     Ok(())
+}
+
+// What rustc's wasm32 target uses by default; Chrome 100 has all of them.
+const WASM_FEATURES: [&str; 6] = ["--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals", "--enable-nontrapping-float-to-int", "--enable-multivalue", "--enable-reference-types"];
+
+// The page is windows-1252 (see aide_core::embed), so everything but the packs must be ASCII.
+fn ascii(what: &str, text: String) -> Result<String> {
+    match text.char_indices().find(|(_, c)| !c.is_ascii()) {
+        None => Ok(text),
+        Some((i, c)) => Err(format!("{what} must be ASCII: found {c:?} at byte {i} (use an escape such as \\25CF in CSS or &#x25CF; in HTML)")),
+    }
 }
 
 fn esbuild(root: &Path, args: &[&str]) -> Result<String> {
@@ -119,7 +139,7 @@ fn assemble(root: &Path, no_compiler: bool, minify: bool) -> Result {
     }
 
     // "</script" inside inline content would end the <script> element early; "<\/script" is equivalent in JS.
-    let boot = esbuild(root, &["src/boot.js", "--minify"])?;
+    let boot = ascii("the boot script", esbuild(root, &["src/boot.js", "--minify", "--charset=ascii"])?)?;
     let boot = regex_lite::Regex::new(r"(?i)</(script)").unwrap().replace_all(&boot, r"<\/$1").into_owned();
 
     let meta_file = cache.join("app-meta.json");
@@ -135,7 +155,9 @@ fn assemble(root: &Path, no_compiler: bool, minify: bool) -> Result {
     esbuild(root, &args)?;
     let app = read_text(&app_file)?;
 
-    let mut packs = vec![embed("app-pack", &compress(app.as_bytes())?)];
+    // The Rust core travels as its own pack: raw bytes compress better than base64 in the app.
+    let core = read(&cache.join("wasm/core/aide_wasm_bg.wasm"))?;
+    let mut packs = vec![embed("app-pack", &compress(app.as_bytes())?), embed("core-pack", &compress(&core)?)];
     if with_compiler {
         packs.push(embed("compiler-pack", &read(&pack_file)?));
     }
@@ -145,9 +167,13 @@ fn assemble(root: &Path, no_compiler: bool, minify: bool) -> Result {
     let about = about_data(root, &meta_file, &version, &date)?;
     packs.push(embed("about-pack", &compress(about.to_string().as_bytes())?));
 
-    let html = read_text(&root.join("src/index.html"))?;
-    let css = read_text(&root.join("src/styles.css"))?;
-    let out = html.replacen("/*INLINE_CSS*/", &css, 1).replacen("<!--PACKS-->", &packs.join("\n"), 1).replacen("/*BOOT_JS*/", &boot, 1);
+    let html = ascii("src/index.html", read_text(&root.join("src/index.html"))?)?;
+    let css = ascii("src/styles.css", read_text(&root.join("src/styles.css"))?)?;
+    let html = html.replacen("/*INLINE_CSS*/", &css, 1).replacen("/*BOOT_JS*/", &boot, 1);
+    let (before, after) = html.split_once("<!--PACKS-->").ok_or("src/index.html has no <!--PACKS--> marker")?;
+    let mut out = before.as_bytes().to_vec();
+    out.extend(packs.join(&b'\n'));
+    out.extend_from_slice(after.as_bytes());
     let out_file = root.join("dist/arduino-ide.html");
     write(&out_file, &out)?;
     println!(

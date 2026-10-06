@@ -1,6 +1,8 @@
-// Entry point of the app bundle: loads the Rust core, then starts the IDE.
-import wasm from "#core-wasm";
+// Entry point of the app bundle: loads the Rust core (unpacked by src/boot.js), then starts the IDE.
 import { loadCore } from "./core.js";
+
+const wasm = globalThis.aideCoreWasm;
+delete globalThis.aideCoreWasm;
 
 loadCore(wasm)
   .then(() => import("./main.js"))
